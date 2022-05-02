@@ -57,4 +57,14 @@ export class ConfigService {
   get publicKey() {
     return this._publicKey;
   }
+
+  get mailLogin() {
+    return process.env['MAIL_LOGIN'] ?? "info@fake-mm.ru"
+  }
+  get mailServer() {
+    return process.env['MAIL_SERVER'] ?? "smtp.locum.ru"
+  }
+  get mailPassword() {
+    return process.env['MAIL_PASSWORD'] ?? "Saq33rrTSaq33rrT"
+  }
 }

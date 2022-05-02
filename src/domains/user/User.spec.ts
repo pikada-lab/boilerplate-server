@@ -9,15 +9,7 @@ user.restore({
   STATUS: "CREATED",
   firstName: "Anton",
   lastName: "Dzhigurda",
-  secondName: "Alex",
-  contacts: [
-    {
-      type: 1 as UserContactType,
-      title: "Phone",
-      userId: 1,
-      value: "79055230881",
-    },
-  ],
+  secondName: "Alex", 
   login: "info@info.ru",
   hash: "",
   sol: "",
@@ -40,28 +32,7 @@ describe("User", () => {
   it("User.setLogin", () => {
     user.setLogin("info@fake-mm.ru");
     expect(user.getLogin()).to.be.equal("info@fake-mm.ru");
-  });
-  it("User script check login with code", () => {
-    expect(function () {
-      user.checkLogin("123456");
-    }).throw("Код не был отправлен");
-
-    const code = user.getCheckCode();
-    expect(code).to.be.a("string");
-    expect(code).to.be.length(6);
-
-    expect(function () {
-      user.checkLogin("");
-    }).throw("Нет кода для проверки");
-
-    expect(function () {
-      user.checkLogin("0~0~0~");
-    }).throw("Код не совпал");
-
-    expect(user.status).to.be.equal("CREATED");
-    user.checkLogin(code);
-    expect(user.status).to.be.equal("CHECKED");
-  });
+  }); 
   it("User script with set and check password", () => {
     user.setPasword("4321");
     expect(function () {
@@ -82,23 +53,7 @@ describe("User", () => {
     expect(function () {
       user.checkPassword("4321");
     }).throw("Неправильный пароль");
-  });
-  it("User script remind", () => {
-    expect(function () {
-      user.checkRemindCode("123");
-    }).throws();
-    let code = user.remindPassword();
-    expect(code).to.be.a("string");
-    expect(function () {
-      user.checkRemindCode("_1_");
-    }).throws();
-    expect(function () {
-      user.checkRemindCode("");
-    }).throws();
-    expect(function () {
-      user.checkRemindCode(code);
-    }).not.throws();
-  });
+  }); 
   it("User.setRole", () => {
       user.setRole(8);
       expect(user.getRole()).to.be.equal(8)
@@ -109,6 +64,5 @@ describe("User", () => {
       expect(userDAO.firstName).to.be.equal("Anton");
       expect(userDAO.secondName).to.be.equal("Alex");
       expect(userDAO.lastName).to.be.equal("Dzhigurda");
-      expect(userDAO).to.have.property("contacts").with.lengthOf(1);
   })
 });

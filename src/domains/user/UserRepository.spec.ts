@@ -1,6 +1,7 @@
-import { User } from ".";
 import { MemoryDataAccessService } from "../../utilites/MemoryDataAccessService";
 import { AnyUserSpecification } from "./AnyUserSpecification";
+import { contactFactory } from "./ContactFactory";
+import { ContactsRepository } from "./ContactsRepository";
 import { userFactory } from "./UserFactory";
 import { FakeMMUserRepository } from "./UserRepository";
 
@@ -8,9 +9,12 @@ var expect = require("chai").expect;
 
 describe("UserRepository", () => {
   const das = new MemoryDataAccessService();
-  das.setFactory("User", userFactory);
+  const repo = new ContactsRepository(das);
+  das.setFactory("Contacts", contactFactory);
+  das.setFactory("Users", userFactory(repo)); 
   const repository = new FakeMMUserRepository(das);
   repository.init();
+  repo.init();
   describe("create user", () => {
     it("user.getid() === 1 && getLogin() === 'any'", (done) => {
       repository

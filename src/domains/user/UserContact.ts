@@ -2,9 +2,11 @@ import { UserContact, UserContactDTO, UserContactType } from ".";
 import { UserDetailsError } from "./Error";
 
 export abstract class BaseUserContact implements UserContact {
+  protected id = 0;
   protected value = "";
   protected title = "";
   protected type!: UserContactType;
+  public isDeleted = false;
 
   static create(contact: UserContactDTO) {
     if (contact.type === UserContactType.PHONE) {
@@ -33,8 +35,15 @@ export abstract class BaseUserContact implements UserContact {
   getType(): UserContactType {
     return this.type;
   }
+  getId() {
+    return this.id;
+  }
+  getUserId() {
+    return this.userId;
+  }
   toJSON(): UserContactDTO {
     return {
+      id: this.id,
       userId: this.userId,
       title: this.title,
       type: this.type,
@@ -49,6 +58,7 @@ export class PhoneUserContact extends BaseUserContact {
     this.value = this.phoneFormatter(contact.value);
     this.title = contact.title;
     this.type = UserContactType.PHONE;
+    this.id = contact.id;
     return this;
   }
   private phoneFormatter(dirtyPhone: string) {
@@ -63,11 +73,12 @@ export class PhoneUserContact extends BaseUserContact {
 }
 
 export class EmailUserContact extends BaseUserContact {
-  private validFormat = /^(\w)@([a-z_\-\.]{2,})\.([a-z]{2,})$/g;
+  private validFormat = /^(.+?)@(.{2,})\.([a-z]{2,})$/g;
   restore(contact: UserContactDTO): UserContact {
     this.value = this.mailFormatter(contact.value);
     this.title = contact.title;
     this.type = UserContactType.EMAIL;
+    this.id = contact.id;
     return this;
   }
   private mailFormatter(dirtyMail: string) {
@@ -82,11 +93,12 @@ export class EmailUserContact extends BaseUserContact {
 }
 
 export class ProfileUserContact extends BaseUserContact {
-  private validFormat = /^https:\/\/(.+)\.(.+)\/(.+)$/g;
+  private validFormat = /^http(s)?:\/\/(.+)$/i;
   restore(contact: UserContactDTO): UserContact {
     this.value = this.profileFormatter(contact.value);
     this.title = contact.title;
     this.type = UserContactType.PROFILE;
+    this.id = contact.id;
     return this;
   }
   private profileFormatter(dirtyLink: string) {
@@ -107,6 +119,7 @@ export class AddressUserContract extends BaseUserContact {
     if (!this.value) throw new UserDetailsError("Нет адреса");
     this.title = contact.title;
     this.type = UserContactType.ADDRESS;
+    this.id = contact.id;
     return this;
   }
 }

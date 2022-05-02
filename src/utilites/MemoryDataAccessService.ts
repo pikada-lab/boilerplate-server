@@ -11,26 +11,28 @@ export class MemoryDataAccessService implements DataAccessService {
     this.factories.set(name, factory);
   }
 
-  request<T>(name: string, sql: string): Promise<T> {
-    throw new Error("Method not implemented.");
+  async request<T>(name: string, sql: string): Promise<T> {
+    this.checkName(name);
+      console.log(`select * from ${name} where ${sql}`);
+    throw new Error("Method request with SQL not implemented.");
   }
   async createEntity<T>(name: string, dao: any): Promise<T> {
     this.checkName(name);
-    let id = this.getIdAndInc(name); 
-    const item = Object.assign(dao, { id: id }); 
+    let id = this.getIdAndInc(name);
+    const item = Object.assign(dao, { id: id });
     this.memory.get(name)!.push(item);
     return this.factories.get(name)!<T>(item);
   }
   async deleteEntity(name: string, id: number): Promise<boolean> {
     this.checkName(name);
     const res = this.memory.get(name)!.findIndex((el) => el.id == id);
-    if (~res) return false;
+    if (!~res) return false;
     this.memory.get(name)!.splice(res, 1);
     return true;
   }
   async updateEntity(name: string, id: number, dao: any): Promise<boolean> {
     const res = this.memory.get(name)!.findIndex((el) => el.id == id);
-    if (~res) return false;
+    if (!~res) return false;
     let item = Object.assign(this.memory.get(name)![res], dao, { id: id });
     this.memory.get(name)!.splice(res, 1, item);
     return true;
@@ -38,13 +40,13 @@ export class MemoryDataAccessService implements DataAccessService {
   async select<T>(name: string, id?: number): Promise<T> {
     if (!id) {
       return this.memory
-        .get(name)!
-        .map((item) => this.factories.get(name)!<T>(item)) as any;
+        .get(name)
+        ?.map((item) => this.factories.get(name)!<T>(item)) as any;
     }
     return this.memory
       .get(name)!
-      .filter((item) => item.id == id)
-      .map((item) => this.factories.get(name)!<T>(item))[0];
+      ?.filter((item) => item.id == id)
+      ?.map((item) => this.factories.get(name)!<T>(item))[0];
   }
 
   private checkName(name: string) {

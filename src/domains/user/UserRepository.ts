@@ -1,4 +1,9 @@
-import { User, UserAuthentication, UserAuthenticationDTO, UserRepository } from ".";
+import {
+  User,
+  UserAuthentication,
+  UserAuthenticationDTO,
+  UserRepository,
+} from ".";
 import { DataAccessService } from "../../utilites";
 import { AnyUserSpecification } from "./AnyUserSpecification";
 import { UserFinderError } from "./Error";
@@ -8,11 +13,13 @@ export class FakeMMUserRepository implements UserRepository {
   private indexRole = new Map<number, Map<number, User>>();
   private indexLogin = new Map<string, User>();
 
+  private table = "Users";
+
   constructor(private dataAccessService: DataAccessService) {}
 
   async init() {
-    const cache = await this.dataAccessService.select<User[]>("User");
-    cache.forEach((r) => {
+    const cache = await this.dataAccessService.select<User[]>(this.table);
+    cache?.forEach((r) => {
       this.addIndexes(r);
     });
   }
@@ -31,16 +38,16 @@ export class FakeMMUserRepository implements UserRepository {
     this.indexRole.get(u.getRole())?.delete(u.getId());
   }
 
-  async save(user: User): Promise<boolean> {
+  async save(user: User): Promise<boolean> { 
     return await this.dataAccessService.updateEntity(
-      "User",
+      this.table,
       user.getId(),
       user.toJSON()
     );
   }
   async create(data: UserAuthenticationDTO): Promise<User> {
     const user = await this.dataAccessService.createEntity<User>(
-      "User",
+      this.table,
       Object.assign(
         {
           role: 1,
@@ -56,14 +63,15 @@ export class FakeMMUserRepository implements UserRepository {
     this.addIndexes(user);
     return user;
   }
+
   async delete(id: number): Promise<boolean> {
     const user = await this.findOne(id);
-    const result = await this.dataAccessService.deleteEntity("User", id);
+    const result = await this.dataAccessService.deleteEntity(this.table, id);
     if (result && user) this.removeIndex(user);
     return result;
   }
   async findAll(): Promise<User[]> {
-    return await this.dataAccessService.select("User");
+    return await this.dataAccessService.select(this.table);
   }
 
   getAll(): User[] {
@@ -71,16 +79,16 @@ export class FakeMMUserRepository implements UserRepository {
   }
 
   async findOne(id: number): Promise<User> {
-    return await this.dataAccessService.select("User", id);
+    return await this.dataAccessService.select(this.table, id);
   }
 
-  getOne(id: number): User  {
-    if(!this.index.has(id)) throw new UserFinderError("Нет пользователя");
+  getOne(id: number): User {
+    if (!this.index.has(id)) throw new UserFinderError("Нет пользователя");
     return this.index.get(id)!;
   }
 
   async findBySpecification(request: AnyUserSpecification): Promise<User[]> {
-    return await this.dataAccessService.request("User", request.build());
+    return await this.dataAccessService.request(this.table, request.build());
   }
 
   getBySpecification(request: AnyUserSpecification): User[] {
@@ -97,7 +105,12 @@ export class FakeMMUserRepository implements UserRepository {
   }
 
   getByLogin(login: string): User {
-    if(!this.indexLogin.has(login))  throw new UserFinderError("Нет пользователя");
+    if (!this.indexLogin.has(login))
+      throw new UserFinderError("Нет пользователя");
     return this.indexLogin.get(login)!;
+  }
+  
+  hasUserByLogin(login: string): boolean {
+    return this.indexLogin.has(login);
   }
 }

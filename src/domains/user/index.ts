@@ -1,10 +1,17 @@
-export interface User extends UserAuthentication, UserAuthorization{
+import { onInit } from "../../utilites";
+
+export interface User extends UserAuthentication, UserAuthorization {
+  remove(): boolean;
+  recover(): boolean;
   getId(): number;
   getName(): string;
   getRole(): number;
   getLogin(): string;
-  getContact(type: string): UserContact | undefined;
-
+  getContacts(): UserContact[];
+  getContact(id: number): UserContact | undefined;
+  addContact(contact: UserContact): void;
+  removeContact(contactId: number): void;
+  setSetting(settingDTO: UserSettingDTO): void;
   /**
    * @throws UserDetailsError
    */
@@ -26,22 +33,21 @@ export interface UserAuthenticationDTO {
   login: string;
   hash: string;
   sol: string;
-
-  checkLoginCode?: string;
-  checkLoginTTL?: number;
 }
 
 export interface UserAuthorizationDTO {
   role: number;
-  remindCode?: string;
-  remindTTL?: number;
 }
-export interface UserDTO {
-  id: number;
+
+export interface UserSettingDTO {
   firstName: string;
   lastName: string;
   secondName: string;
-  contacts: UserContactDTO[];
+}
+export interface UserDTO extends UserSettingDTO {
+  id: number;
+  STATUS: string;
+  contacts?: UserContactDTO[];
 }
 
 export interface UserAuthentication {
@@ -54,19 +60,6 @@ export interface UserAuthentication {
 
 export interface UserAuthorization {
   /**
-   * Возвращает код для восстановления пароля
-   * который можно отправить пользователю любым удобным способом
-   * и перейдя на страницу с этим кодом в параметрах
-   * он сможет восстановить пароль через процедуру
-   * UserAuthorizationService.changePassword
-   */
-  remindPassword(): string;
-  /**
-   * В случае успеха не вызывает исключение
-   * @throws RemindError
-   */
-  checkRemindCode(code: string): void;
-  /**
    * @throws PasswordError
    */
   setPasword(password: string): void;
@@ -76,8 +69,7 @@ export interface UserAuthorization {
    */
   setLogin(login: string): void;
   getLogin(): string;
-  getCheckCode(): string;
-  checkLogin(code: string): void;
+  checkLogin(): void;
 }
 
 export enum UserContactType {
@@ -87,27 +79,31 @@ export enum UserContactType {
   PROFILE, // vk, instagram, facebook, twitter, website
 }
 export interface UserContactDTO {
+  id: number;
   userId: number;
   title: string;
   type: UserContactType;
   value: string;
 }
 export interface UserContact {
+  isDeleted: boolean;
+
+  getId(): number;
   getTitle(): string;
   getContact(): string;
   getType(): UserContactType;
+  getUserId(): number;
   toJSON(): UserContactDTO;
   restore(contact: UserContactDTO): UserContact;
 }
-
-export interface UserRepository {
+export interface UserRepository extends onInit {
   /**
    * @throws UserSaveError
    */
   save(User: User): Promise<boolean>;
   create(data: UserAuthenticationDTO): Promise<User>;
   delete(id: number): Promise<boolean>;
-  
+
   findAll(): Promise<User[]>;
   findOne(id: number): Promise<User>;
   findBySpecification(request: AnyUserSpecification): Promise<User[]>;
@@ -117,30 +113,9 @@ export interface UserRepository {
   getOne(id: number): User;
   getBySpecification(request: AnyUserSpecification): User[];
   getByRole(roleId: number): User[];
-  getByLogin(login: string): User; 
+  getByLogin(login: string): User;
+  hasUserByLogin(login: string): boolean;
 }
 
 /** маркирующий интерфейс для запросов по неиндексированным полям пользователя */
 export interface AnyUserSpecification {}
-
-export interface UserSettingService {
-  getFullDetailsUser(userId: number): Promise<UserDTO>;
-  addContact(userId: number, contact: UserContactDTO): Promise<User>;
-}
-/** JWT -  */
-export type Token = string;
-export interface UserAuthenticationService {
-  login(login: string, password: string): Promise<[Token, Token]>;
-  logout(token: Token): Promise<void>;
-  refresh(token: Token): Promise<[Token, Token]>;
-  getLog(): Promise<String[]>;
-}
-
-export interface UserAuthorizationService {
-  create(login: string, password: string): Promise<User>;
-  changeRole(login: number, roleId: number): Promise<User>;
-  tryToRemindUsersAccess(login: number): Promise<void>;
-  changePassword(login: string, password: string): Promise<void>;
-  delete(login: string): Promise<boolean>;
-  changeLogin(oldLogin: string, newLogin: string): Promise<void>;
-}

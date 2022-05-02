@@ -8,33 +8,22 @@ import {
   UserContactDTO,
   UserDAO,
   UserDTO,
+  UserSettingDTO,
 } from ".";
-import {
-  AuthenticationError,
-  LoginError,
-  PasswordError,
-  RemindError,
-} from "./Error";
+import { AuthenticationError, PasswordError } from "./Error";
 import { createHash } from "crypto";
-import { BaseUserContact } from "./UserContact";
 
 export class FakeMMUser implements User, UserAuthorization, UserAuthentication {
   private id!: number;
   private firstName!: string;
   private lastName!: string;
   private secondName!: string;
-  private contacts: Map<string, UserContact> = new Map();
+  private contacts: Map<number, UserContact> = new Map();
 
   private role!: number;
   private login!: string;
   private hash!: string;
   private sol!: string;
-
-  private checkLoginCode?: string;
-  private checkLoginTTL: number = 0;
-
-  private remindCode?: string;
-  private remindTTL: number = 0;
 
   private STATUS: "CREATED" | "CHECKED" | "DELETED" = "CREATED";
   private createAt!: number;
@@ -53,8 +42,11 @@ export class FakeMMUser implements User, UserAuthorization, UserAuthentication {
   getRole(): number {
     return this.role;
   }
-  getContact(type: string): UserContact | undefined {
-    return this.contacts.get(type);
+  getContacts() {
+    return Array.from(this.contacts.values());
+  }
+  getContact(id: number): UserContact | undefined {
+    return this.contacts.get(id);
   }
   setUserDetail(user: UserDTO): void {
     this.restoreUser(user);
@@ -76,41 +68,57 @@ export class FakeMMUser implements User, UserAuthorization, UserAuthentication {
     );
   }
 
-  private getUserDTO(): UserDTO {
+  private getUserDTO(): UserDTO & UserAuthorizationDTO {
+    return Object.assign(
+      {
+        id: this.id,
+        STATUS: this.STATUS,
+        contacts: this.getContactsList(),
+        role: this.role,
+      },
+      this.getSetting()
+    );
+  }
+  setSetting(dto: UserSettingDTO) {
+    this.firstName = dto.firstName;
+    this.lastName = dto.lastName;
+    this.secondName = dto.secondName;
+  }
+  getSetting(): UserSettingDTO {
     return {
-      id: this.id,
       firstName: this.firstName,
       secondName: this.secondName,
       lastName: this.lastName,
-      contacts: this.getContactsList(),
     };
   }
 
   private getContactsList(): UserContactDTO[] {
     return Array.from(this.contacts.values()).map((r) => r.toJSON());
   }
-  private setContactList(contacts: UserContactDTO[]) {
+  setContactList(contacts: UserContact[]) {
     this.contacts = new Map();
-    if(!contacts) return;
-    for (let contactDTO of contacts) {
-      const contact = BaseUserContact.create(contactDTO);
-      this.contacts.set(contact.getTitle(), contact);
+    if (!contacts) return;
+    for (let contact of contacts) {
+      this.contacts.set(contact.getId(), contact);
     }
+  }
+
+  addContact(contact: UserContact) {
+    this.contacts.set(contact.getId(), contact);
+  }
+  removeContact(contactId: number) {
+    this.contacts.delete(contactId);
   }
   private getUserAuthenticationDTO() {
     return {
       login: this.login,
       hash: this.hash,
       sol: this.sol,
-      checkLoginCode: this.checkLoginCode,
-      checkLoginTTL: this.checkLoginTTL,
     };
   }
   private getUserAuthorizationDTO() {
     return {
       role: this.role,
-      remindCode: this.remindCode,
-      remindTTL: this.remindTTL,
     };
   }
   restore(user: UserDAO): User {
@@ -128,40 +136,16 @@ export class FakeMMUser implements User, UserAuthorization, UserAuthentication {
     this.firstName = user.firstName;
     this.secondName = user.secondName;
     this.lastName = user.lastName;
-    this.setContactList(user.contacts);
   }
   private restoreUserAuthentication(user: UserAuthenticationDTO) {
     this.login = user.login;
     this.hash = user.hash;
     this.sol = user.sol;
-    this.checkLoginCode = user.checkLoginCode;
-    this.checkLoginTTL = user.checkLoginTTL ?? 0;
   }
   private restoreUserAuthorization(user: UserAuthorizationDTO) {
     this.role = user.role;
-    this.remindCode = user.remindCode;
-    this.remindTTL = user.remindTTL ?? 0;
   }
-  remindPassword(): string {
-    let code = this.getRandomCode();
-    this.remindCode = code;
-    this.remindTTL = 60 * 60 * 1000 + new Date().valueOf();
-    return this.remindCode;
-  }
-  private getRandomCode() {
-    return Math.floor(Math.random() * 0xffffff)
-      .toString(16)
-      .padStart(6, "0");
-  }
-  checkRemindCode(code: string): void {
-    const date = new Date().valueOf();
-    if (!this.remindCode) throw new RemindError("Код уже применён");
-    if (this.remindTTL < date)
-      throw new RemindError("Вышло время ожидания");
-    if (this.remindCode != code) throw new RemindError("Код не совпал");
-    this.remindCode = "";
-    this.remindTTL = 0;
-  }
+
   setPasword(password: string): void {
     if (!password) throw new PasswordError("Нет пароля");
     if (typeof password != "string")
@@ -195,14 +179,6 @@ export class FakeMMUser implements User, UserAuthorization, UserAuthentication {
     this.STATUS = "CREATED";
     return;
   }
-  getCheckCode() {
-    if (this.STATUS === "CHECKED")
-      throw new LoginError("Login уже подтверждён");
-    this.checkLoginCode = this.getRandomCode();
-    this.checkLoginTTL = 60 * 60 * 1000 + new Date().valueOf();
-    this.updateAt = new Date().valueOf();
-    return this.checkLoginCode;
-  }
   getLogin(): string {
     return this.login;
   }
@@ -220,15 +196,21 @@ export class FakeMMUser implements User, UserAuthorization, UserAuthentication {
     return true;
   }
 
-  checkLogin(code: string) {
-    const date = new Date().valueOf();
-    if (!code) throw new LoginError("Нет кода для проверки");
-    if (!this.checkLoginCode) throw new LoginError("Код не был отправлен");
-    if (this.checkLoginTTL < date)
-      throw new LoginError("Вышло время подтверждения");
-    if (this.checkLoginCode != code) throw new LoginError("Код не совпал");
+  checkLogin() {
+    if (this.STATUS === "CHECKED") return false;
     this.STATUS = "CHECKED";
-    this.checkLoginCode = "";
-    this.checkLoginTTL = 0;
+    return true;
+  }
+
+  remove() {
+    if (this.STATUS === "DELETED") return false;
+    this.STATUS = "DELETED";
+    return true;
+  }
+
+  recover() {
+    if (this.STATUS === "CREATED") return false;
+    this.STATUS = "CREATED";
+    return true;
   }
 }
