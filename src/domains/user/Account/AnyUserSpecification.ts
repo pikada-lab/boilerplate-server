@@ -1,5 +1,3 @@
-import { User } from ".";
-
 export class AnyUserSpecification {
   private specification: { field: string; operation: string; param: any }[] =
     [];
@@ -53,7 +51,7 @@ export class AnyUserSpecification {
   }
 
   get and() {
-      return this;
+    return this;
   }
 
   buildStrategy() {

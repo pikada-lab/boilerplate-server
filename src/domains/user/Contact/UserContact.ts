@@ -1,5 +1,5 @@
-import { UserContact, UserContactDTO, UserContactType } from ".";
-import { UserDetailsError } from "./Error";
+import { UserContact, UserContactDTO, UserContactType } from "..";
+import { UserDetailsError } from "../Error";
 
 export abstract class BaseUserContact implements UserContact {
   protected id = 0;

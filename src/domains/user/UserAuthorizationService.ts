@@ -1,10 +1,10 @@
 import { User, UserRepository } from ".";
-import { ContactsRepository } from "./ContactsRepository";
+import { ContactsRepository } from "./Contact/ContactsRepository";
 
 import { UserError } from "./Error";
 import { UserAuthorizationService } from "./services";
-import { UserVerefyStrategy } from "./UserVerefyStrategy";
-import { VerifyType } from "./UserVerifyRecord";
+import { UserVerefyStrategy } from "./Verify/UserVerefyStrategy";
+import { VerifyType } from "./Verify/UserVerifyRecord";
 
 export class FakeMMUserAuthorizationService
   implements UserAuthorizationService

@@ -1,8 +1,7 @@
-import { FakeMailPort } from "./domains/ports/FakeMailPort";
-import { contactFactory } from "./domains/user/ContactFactory";
-import { userFactory } from "./domains/user/UserFactory";
+import { FakeMailPort } from "./domains/ports/FakeMailPort"; 
 import { UserModule } from "./domains/user/UserModule";
 import { ConfigService } from "./utilites/ConfigService";
+import { FileDataAccessService } from "./utilites/FileDataAccessService";
 import { MemoryDataAccessService } from "./utilites/MemoryDataAccessService";
 import { ServerController } from "./utilites/ServerController";
 
@@ -16,7 +15,7 @@ export class API {
     const server = new ServerController(config);
     await server.init();
 
-    const daService = new MemoryDataAccessService();
+    const daService = new FileDataAccessService("../db/");
 
     const userModule = new UserModule(config, server, daService, mailPort);
  

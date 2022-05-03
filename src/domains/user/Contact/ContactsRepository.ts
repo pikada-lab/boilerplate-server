@@ -1,6 +1,6 @@
-import { UserContact, UserContactDTO } from ".";
-import { DataAccessService } from "../../utilites";
-import { UserFinderError } from "./Error";
+import { UserContact, UserContactDTO } from "..";
+import { DataAccessService } from "../../../utilites";
+import { UserFinderError } from "../Error";
 
 export class ContactsRepository {
   private index = new Map<number, UserContact>();

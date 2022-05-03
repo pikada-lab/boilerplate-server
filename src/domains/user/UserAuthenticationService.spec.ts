@@ -1,13 +1,12 @@
-import { run } from "mocha";
 import { ConfigService } from "../../utilites/ConfigService";
 import { MemoryDataAccessService } from "../../utilites/MemoryDataAccessService";
-import { contactFactory } from "./ContactFactory";
-import { ContactsRepository } from "./ContactsRepository";
-import { TwoFactorFactory } from "./TwoFactorFactory";
-import { TwoFactorRepository } from "./TwoFactorRepository";
+import { contactFactory } from "./Contact/ContactFactory";
+import { ContactsRepository } from "./Contact/ContactsRepository";
+import { TwoFactorFactory } from "./2FA/TwoFactorFactory";
+import { TwoFactorRepository } from "./2FA/TwoFactorRepository";
 import { FakeMMUserAuthenticationService } from "./UserAuthenticationService";
-import { userFactory } from "./UserFactory";
-import { FakeMMUserRepository } from "./UserRepository";
+import { userFactory } from "./Account/UserFactory";
+import { FakeMMUserRepository } from "./Account/UserRepository";
 
 var expect = require("chai").expect;
 const config = new ConfigService();

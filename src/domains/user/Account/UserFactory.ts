@@ -1,5 +1,5 @@
-import { User, UserDAO } from ".";
-import { ContactsRepository } from "./ContactsRepository";
+import { User, UserDAO } from "..";
+import { ContactsRepository } from "../Contact/ContactsRepository";
 import { FakeMMUser } from "./User";
 
 export const userFactory = (contactRepository: ContactsRepository) => {

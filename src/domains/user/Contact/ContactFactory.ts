@@ -1,4 +1,4 @@
-import { UserContactDTO } from ".";
+import { UserContactDTO } from "..";
 import { BaseUserContact } from "./UserContact";
 
 export const contactFactory = (contactDTO: UserContactDTO): any => {

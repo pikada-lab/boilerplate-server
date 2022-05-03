@@ -5,8 +5,8 @@ import { LoginError, TwoFAError, UserError } from "./Error";
 import { TokenDecoder } from "../../utilites/TokenDecoder";
 import * as QRCode from "qrcode";
 import { UserAuthenticationService } from "./services";
-import { TwoFactorRepository } from "./TwoFactorRepository";
-import { TwoFactorSecrets } from "./TwoFactorSecrets";
+import { TwoFactorRepository } from "./2FA/TwoFactorRepository";
+import { TwoFactorSecrets } from "./2FA/TwoFactorSecrets";
 
 export class FakeMMUserAuthenticationService
   implements UserAuthenticationService

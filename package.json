@@ -14,6 +14,7 @@
     "fastify-cors": "^6.0.3",
     "jose": "^4.6.1",
     "mail": "^0.2.3",
+    "node-storage": "^0.0.9",
     "nodemailer": "^6.7.3",
     "qrcode": "^1.5.0",
     "speakeasy": "^2.0.0"

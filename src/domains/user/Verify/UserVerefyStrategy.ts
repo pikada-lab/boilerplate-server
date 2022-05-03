@@ -1,7 +1,7 @@
-import { UserRepository } from ".";
-import { CallPort } from "../ports/CallPort";
-import { MailPort } from "../ports/MailPort";
-import { VerifyError } from "./Error";
+import { UserRepository } from "..";
+import { CallPort } from "../../ports/CallPort";
+import { MailPort } from "../../ports/MailPort";
+import { VerifyError } from "../Error";
 import { UserVerifyRepository } from "./UserVerefyReposiotry";
 import { UserVerifyRecord, VerifyType } from "./UserVerifyRecord";
 

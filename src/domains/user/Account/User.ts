@@ -9,8 +9,8 @@ import {
   UserDAO,
   UserDTO,
   UserSettingDTO,
-} from ".";
-import { AuthenticationError, PasswordError } from "./Error";
+} from "..";
+import { AuthenticationError, PasswordError } from "../Error";
 import { createHash } from "crypto";
 
 export class FakeMMUser implements User, UserAuthorization, UserAuthentication {

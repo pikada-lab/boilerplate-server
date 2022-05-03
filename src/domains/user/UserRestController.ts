@@ -5,8 +5,11 @@ import {
   RestRequest,
   ServerController,
 } from "../../utilites/ServerController";
-import { AnyUserSpecification } from "./AnyUserSpecification";
+import { AnyUserSpecification } from "./Account/AnyUserSpecification";
 import { LoginError, PasswordError, RemindError, UserError } from "./Error";
+import { AccessItem } from "./Role/Role";
+import { RoleRepository } from "./Role/RoleRepository";
+import { RoleService } from "./Role/RoleService";
 import {
   UserAuthenticationService,
   UserAuthorizationService,
@@ -19,7 +22,8 @@ export class UserRestController implements onInit {
     private repository: UserRepository,
     private userService: UserSettingService,
     private authService: UserAuthorizationService,
-    private loginService: UserAuthenticationService
+    private loginService: UserAuthenticationService,
+    private role: RoleService
   ) {}
 
   async init() {
@@ -75,7 +79,8 @@ export class UserRestController implements onInit {
     return await this.authService.getLoginDetails(+req.params.id);
   }
 
-  private async getAllUser(req: RestRequest) {
+  private async getAllUser(req: RestRequest & RestAuthorizationRequest) {
+    this.role.checkUserWithThrow(req.payload.id, AccessItem.CAN_SEE_USERS);
     if (req.query.firstName) {
       const specification = new AnyUserSpecification()
         .where("firstName")
@@ -106,9 +111,15 @@ export class UserRestController implements onInit {
       this.changeRemindPassword(req)
     );
     this.server.post("/v1/user/remind", async (req) => this.remind(req));
-    this.server.deleteAuth("/v1/user/remove", async (req) => this.removeUser(req));
-    this.server.postAuth("/v1/user/recover", async (req) => this.recoverUser(req));
-    this.server.deleteAuth("/v1/user/delete", async (req) => this.deleteUser(req));
+    this.server.deleteAuth("/v1/user/remove", async (req) =>
+      this.removeUser(req)
+    );
+    this.server.postAuth("/v1/user/recover", async (req) =>
+      this.recoverUser(req)
+    );
+    this.server.deleteAuth("/v1/user/delete", async (req) =>
+      this.deleteUser(req)
+    );
     this.server.patchAuth("/v1/user/password", async (req) =>
       this.changePassword(req)
     );
@@ -302,19 +313,17 @@ export class UserRestController implements onInit {
   }
 
   private async deleteUser(req: RestRequest & RestAuthorizationRequest) {
-    if(req.payload.id === 1) return false;
+    if (req.payload.id === 1) return false;
     const userId = req.payload.id;
     await this.authService.delete(userId);
     return true;
   }
-
 
   private async recoverUser(req: RestRequest & RestAuthorizationRequest) {
     const userId = req.payload.id;
     await this.authService.recover(userId);
     return true;
   }
-
 
   //#endregion
   //#region Check params

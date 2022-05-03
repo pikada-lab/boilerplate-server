@@ -3,27 +3,28 @@ import { DataAccessService } from "../../utilites";
 import { ConfigService } from "../../utilites/ConfigService";
 import { ServerController } from "../../utilites/ServerController";
 import { MailPort } from "../ports/MailPort";
-import { contactFactory } from "./ContactFactory";
-import { ContactsRepository } from "./ContactsRepository";
+import { contactFactory } from "./Contact/ContactFactory";
+import { ContactsRepository } from "./Contact/ContactsRepository";
 import {
   UserAuthorizationService,
   UserAuthenticationService,
   UserSettingService,
 } from "./services";
-import { TwoFactorFactory } from "./TwoFactorFactory";
-import { TwoFactorRepository } from "./TwoFactorRepository";
+import { TwoFactorFactory } from "./2FA/TwoFactorFactory";
+import { TwoFactorRepository } from "./2FA/TwoFactorRepository";
 import { FakeMMUserAuthenticationService } from "./UserAuthenticationService";
 import { FakeMMUserAuthorizationService } from "./UserAuthorizationService";
-import { userFactory } from "./UserFactory";
-import { FakeMMUserRepository } from "./UserRepository";
+import { userFactory } from "./Account/UserFactory";
+import { FakeMMUserRepository } from "./Account/UserRepository";
 import { UserRestController } from "./UserRestController";
 import { FakeMMUserSettingService } from "./UserSettingService";
-import { UserVerifyRepository } from "./UserVerefyReposiotry";
+import { UserVerifyRepository } from "./Verify/UserVerefyReposiotry";
 import {
   UserVerefyForMailStrategy,
   UserVerefyStrategy,
-} from "./UserVerefyStrategy";
-import { UserVerifyRecordFactory } from "./UserVerifyRecordFactory";
+} from "./Verify/UserVerefyStrategy";
+import { UserVerifyRecordFactory } from "./Verify/UserVerifyRecordFactory";
+import { RoleComponent } from "./Role/RoleComponent";
 
 export class UserModule {
   private repository!: UserRepository;
@@ -35,17 +36,20 @@ export class UserModule {
   private verifyRepository: UserVerifyRepository;
   private verifyStrategy: UserVerefyStrategy;
   private twoFactorRepository: TwoFactorRepository;
+  private roleComponent: RoleComponent;
   constructor(
     config: ConfigService,
     server: ServerController,
     dataAccessService: DataAccessService,
     mailPort: MailPort
   ) {
+ 
     this.verifyRepository = new UserVerifyRepository(dataAccessService);
     this.repository = new FakeMMUserRepository(dataAccessService);
     this.contactsRepository = new ContactsRepository(dataAccessService);
     this.twoFactorRepository = new TwoFactorRepository(dataAccessService);
 
+    this.roleComponent = new RoleComponent(dataAccessService, this.repository);
     this.verifyStrategy = new UserVerefyForMailStrategy(
       mailPort,
       this.repository,
@@ -70,7 +74,8 @@ export class UserModule {
       this.repository,
       this.userSettingService,
       this.userAuthorizationService,
-      this.userAuthenticationService
+      this.userAuthenticationService,
+      this.roleComponent.getService()
     );
 
     dataAccessService.setFactory("Contacts", contactFactory);
@@ -86,5 +91,6 @@ export class UserModule {
     await this.userAuthenticationService.init();
     await this.userSettingService.init();
     await this.userController.init();
+    await this.roleComponent.init();
   }
 }

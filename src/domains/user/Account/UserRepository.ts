@@ -3,10 +3,10 @@ import {
   UserAuthentication,
   UserAuthenticationDTO,
   UserRepository,
-} from ".";
-import { DataAccessService } from "../../utilites";
+} from "..";
+import { DataAccessService } from "../../../utilites";
 import { AnyUserSpecification } from "./AnyUserSpecification";
-import { UserFinderError } from "./Error";
+import { UserFinderError } from "../Error";
 
 export class FakeMMUserRepository implements UserRepository {
   private index = new Map<number, User>();
@@ -18,7 +18,7 @@ export class FakeMMUserRepository implements UserRepository {
   constructor(private dataAccessService: DataAccessService) {}
 
   async init() {
-    const cache = await this.dataAccessService.select<User[]>(this.table);
+    const cache = await this.dataAccessService.select<User[]>(this.table); 
     cache?.forEach((r) => {
       this.addIndexes(r);
     });

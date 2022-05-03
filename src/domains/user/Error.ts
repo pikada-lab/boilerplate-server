@@ -12,3 +12,5 @@ export class UserFinderError extends UserError {}
 export class VerifyError extends UserError {}
 
 export class TwoFAError extends UserError {}
+
+export class AccessError extends UserError {}

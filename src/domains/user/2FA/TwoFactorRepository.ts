@@ -1,5 +1,5 @@
-import { DataAccessService } from "../../utilites";
-import { VerifyError } from "./Error";
+import { DataAccessService } from "../../../utilites";
+import { VerifyError } from "../Error";
 import { TwoFactorSecrets } from "./TwoFactorSecrets";
 
 export class TwoFactorRepository {

@@ -1,16 +1,16 @@
 import { ConfigService } from "../../utilites/ConfigService";
 import { MemoryDataAccessService } from "../../utilites/MemoryDataAccessService";
 import { FakeMailPort } from "../ports/FakeMailPort";
-import { contactFactory } from "./ContactFactory";
-import { ContactsRepository } from "./ContactsRepository";
-import { TwoFactorFactory } from "./TwoFactorFactory";
-import { TwoFactorRepository } from "./TwoFactorRepository";
+import { contactFactory } from "./Contact/ContactFactory";
+import { ContactsRepository } from "./Contact/ContactsRepository";
+import { TwoFactorFactory } from "./2FA/TwoFactorFactory";
+import { TwoFactorRepository } from "./2FA/TwoFactorRepository";
 import { FakeMMUserAuthorizationService } from "./UserAuthorizationService";
-import { userFactory } from "./UserFactory";
-import { FakeMMUserRepository } from "./UserRepository";
-import { UserVerifyRepository } from "./UserVerefyReposiotry";
-import { UserVerefyForMailStrategy } from "./UserVerefyStrategy";
-import { UserVerifyRecordFactory } from "./UserVerifyRecordFactory";
+import { userFactory } from "./Account/UserFactory";
+import { FakeMMUserRepository } from "./Account/UserRepository";
+import { UserVerifyRepository } from "./Verify/UserVerefyReposiotry";
+import { UserVerefyForMailStrategy } from "./Verify/UserVerefyStrategy";
+import { UserVerifyRecordFactory } from "./Verify/UserVerifyRecordFactory";
 
 var expect = require("chai").expect;
 

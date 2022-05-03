@@ -1,7 +1,7 @@
-import { MemoryDataAccessService } from "../../utilites/MemoryDataAccessService";
+import { MemoryDataAccessService } from "../../../utilites/MemoryDataAccessService";
 import { AnyUserSpecification } from "./AnyUserSpecification";
-import { contactFactory } from "./ContactFactory";
-import { ContactsRepository } from "./ContactsRepository";
+import { contactFactory } from "../Contact/ContactFactory";
+import { ContactsRepository } from "../Contact/ContactsRepository";
 import { userFactory } from "./UserFactory";
 import { FakeMMUserRepository } from "./UserRepository";
 
@@ -61,13 +61,7 @@ describe("UserRepository", () => {
       expect(user).to.be.a("object");
       expect(user.getId()).to.be.equal(1);
       expect(user.getLogin()).to.be.equal("info@fake-mm.ru");
-    });
-    it("repository.getByRole(1)", () => {
-      const user = repository.getByRole(1)!;
-      expect(user[0]).to.be.a("object");
-      expect(user[0].getId()).to.be.equal(1);
-      expect(user[0].getLogin()).to.be.equal("info@fake-mm.ru");
-    });
+    }); 
     it("repository.getOne(3)", () => {
       const user = repository.getOne(3)!;
       expect(user).to.be.a("object");

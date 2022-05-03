@@ -6,7 +6,7 @@ import {
   UserRepository,
   UserSettingDTO, 
 } from ".";
-import { ContactsRepository } from "./ContactsRepository";
+import { ContactsRepository } from "./Contact/ContactsRepository";
 import { UserSettingService } from "./services";
 
 export class FakeMMUserSettingService implements UserSettingService {

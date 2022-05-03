@@ -1,6 +1,6 @@
 import * as speakeasy from "speakeasy";
 import * as QRCode from "qrcode";
-import { UserError } from "./Error";
+import { UserError } from "../Error";
 
 export class TwoFactorSecrets {
   private id?: number;

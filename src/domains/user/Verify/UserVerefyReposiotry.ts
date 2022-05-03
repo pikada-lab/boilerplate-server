@@ -1,5 +1,5 @@
-import { DataAccessService } from "../../utilites";
-import { VerifyError } from "./Error";
+import { DataAccessService } from "../../../utilites";
+import { VerifyError } from "../Error";
 import { UserVerifyRecord, VerifyType } from "./UserVerifyRecord";
 
 export class UserVerifyRepository {

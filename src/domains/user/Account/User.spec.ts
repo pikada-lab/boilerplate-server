@@ -1,4 +1,4 @@
-import { UserContactType } from "."; 
+import { UserContactType } from ".."; 
 import { FakeMMUser } from "./User";
 
 var expect = require("chai").expect;

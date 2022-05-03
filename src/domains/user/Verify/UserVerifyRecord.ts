@@ -1,5 +1,5 @@
 import { createHash } from "crypto";
-import { VerifyError } from "./Error";
+import { VerifyError } from "../Error";
 
 export enum VerifyType {
   REMIND = 1,
