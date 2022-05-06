@@ -63,6 +63,6 @@ export class ConfigService {
     return process.env['MAIL_SERVER'] ?? "smtp.locum.ru"
   }
   get mailPassword() {
-    return process.env['MAIL_PASSWORD'] ?? "Saq33rrTSaq33rrT"
+    return process.env['MAIL_PASSWORD'] ?? "***PASSWORD***"
   }
 }
