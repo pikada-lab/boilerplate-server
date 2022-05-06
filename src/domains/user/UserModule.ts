@@ -79,18 +79,23 @@ export class UserModule {
     );
 
     dataAccessService.setFactory("Contacts", contactFactory);
-    dataAccessService.setFactory("Users", userFactory(this.contactsRepository));
     dataAccessService.setFactory("VerifyRecord", UserVerifyRecordFactory);
     dataAccessService.setFactory("TwoFactorSecrets", TwoFactorFactory);
+    dataAccessService.setFactory("Users", userFactory(this.contactsRepository));
   }
 
   async init() {
-    await this.repository.init();
+    await this.contactsRepository.init();
+    await this.roleComponent.init();
     await this.verifyRepository.init();
     await this.userAuthorizationService.init();
     await this.userAuthenticationService.init();
-    await this.userSettingService.init();
     await this.userController.init();
-    await this.roleComponent.init();
+    await this.userSettingService.init();
+    await this.repository.init();
+  }
+
+  getRoleChecker() {
+    return this.roleComponent.getService();
   }
 }

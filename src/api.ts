@@ -1,3 +1,4 @@
+import { MagazineModule } from "./domains/magazine/MagazineModule";
 import { FakeMailPort } from "./domains/ports/FakeMailPort"; 
 import { UserModule } from "./domains/user/UserModule";
 import { ConfigService } from "./utilites/ConfigService";
@@ -12,15 +13,18 @@ export class API {
     await config.init();
 
     const mailPort = new FakeMailPort(config, false);
-    const server = new ServerController(config);
+    const server = new ServerController(config); 
     await server.init();
 
     const daService = new FileDataAccessService("../db/");
 
     const userModule = new UserModule(config, server, daService, mailPort);
  
-
+    const magazineModule = new MagazineModule(daService, server, userModule.getRoleChecker())
     await mailPort.init();
     await userModule.init();
+    await magazineModule.init(); 
+
+    server.listen();
   }
 }

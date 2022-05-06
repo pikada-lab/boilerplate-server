@@ -126,6 +126,7 @@ export class FakeMMUser implements User, UserAuthorization, UserAuthentication {
     this.id = user.id;
     this.createAt = user.createAt;
     this.updateAt = user.updateAt;
+    this.STATUS = user.STATUS;
     this.restoreUser(user);
     this.restoreUserAuthentication(user);
     this.restoreUserAuthorization(user);

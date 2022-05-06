@@ -10,13 +10,17 @@
   "author": "Dzhigurda Anton <info@fake-mm.ru>",
   "license": "ISC",
   "dependencies": {
+    "@fastify/static": "^5.0.2",
     "fastify": "^3.28.0",
     "fastify-cors": "^6.0.3",
+    "fastify-file-upload": "^4.0.0",
+    "fastify-multipart": "^5.4.0",
     "jose": "^4.6.1",
     "mail": "^0.2.3",
     "node-storage": "^0.0.9",
     "nodemailer": "^6.7.3",
     "qrcode": "^1.5.0",
+    "sharp": "^0.30.4",
     "speakeasy": "^2.0.0"
   },
   "devDependencies": {

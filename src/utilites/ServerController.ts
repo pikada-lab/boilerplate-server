@@ -3,6 +3,9 @@ import { FastifyInstance, FastifyRequest } from "fastify";
 import { ConfigService } from "./ConfigService";
 import { AuthenticationError, TwoFAError } from "../domains/user/Error";
 import { TokenDecoder } from "./TokenDecoder";
+import { join } from "path";
+const fileUpload = require("fastify-file-upload");
+const fastifyStatic = require("@fastify/static");
 
 export interface AuthHeaders {
   authorization: string;
@@ -16,12 +19,17 @@ export interface RestRequest {
 export interface RestAuthorizationRequest {
   payload: { id: number };
 }
+export interface RestFileRequest {
+  raw: any;
+}
 
 export class ServerController {
   private http!: FastifyInstance;
   constructor(private config: ConfigService) {}
   async init() {
     this.http = fastify();
+    this.http.register(fileUpload);
+    this.images();
     this.http.get("/ping", async (request, reply) => {
       return "pong";
     });
@@ -29,8 +37,17 @@ export class ServerController {
       origin: "*",
       methods: ["POST, PATCH", "DELETE"],
     });
-    // TODO, config PORT
-    this.http.listen({ port: 8080 }, (err, address) => {
+  }
+  images() {
+    this.http.register(fastifyStatic, {
+      root: join(__dirname, "..", "..", "images"),
+      prefix: "/images"
+    });
+    console.log(join(__dirname, "..", "..", "images"));
+  }
+
+  listen() {
+    this.http.listen({ port: (process.env.PORT as any) ?? 8080 }, (err, address) => {
       if (err) {
         console.error(err);
         process.exit(1);
@@ -41,23 +58,14 @@ export class ServerController {
 
   private async getPayload(req: FastifyRequest<{ Headers: AuthHeaders }>) {
     const auth = req.headers.authorization;
-    if (!auth)
-      throw new AuthenticationError(
-        "Не удалось получить криптографическую подпись"
-      );
+    if (!auth) throw new AuthenticationError("Не удалось получить криптографическую подпись");
     const token = auth.split(" ")[1];
 
     const payload = TokenDecoder(token, this.config);
     return payload;
   }
 
-  getAuth(
-    endpoint: string,
-    callback: (
-      req: RestRequest & RestAuthorizationRequest,
-      res?: any
-    ) => Promise<any>
-  ) {
+  getAuth(endpoint: string, callback: (req: RestRequest & RestAuthorizationRequest, res?: any) => Promise<any>) {
     this.http.get<{ Headers: AuthHeaders }>(endpoint, async (req, res) => {
       try {
         const payload = await this.getPayload(req);
@@ -72,10 +80,7 @@ export class ServerController {
     });
   }
 
-  postAuth(
-    endpoint: string,
-    callback: (req: RestRequest & RestAuthorizationRequest) => Promise<any>
-  ) {
+  postAuth(endpoint: string, callback: (req: RestRequest & RestAuthorizationRequest) => Promise<any>) {
     this.http.post<{ Headers: AuthHeaders }>(endpoint, async (req, res) => {
       try {
         const payload = await this.getPayload(req);
@@ -88,10 +93,7 @@ export class ServerController {
       }
     });
   }
-  patchAuth(
-    endpoint: string,
-    callback: (req: RestRequest & RestAuthorizationRequest) => Promise<any>
-  ) {
+  patchAuth(endpoint: string, callback: (req: RestRequest & RestAuthorizationRequest) => Promise<any>) {
     this.http.patch<{ Headers: AuthHeaders }>(endpoint, async (req, res) => {
       try {
         const payload = await this.getPayload(req);
@@ -105,10 +107,7 @@ export class ServerController {
     });
   }
 
-  deleteAuth(
-    endpoint: string,
-    callback: (req: RestRequest & RestAuthorizationRequest) => Promise<any>
-  ) {
+  deleteAuth(endpoint: string, callback: (req: RestRequest & RestAuthorizationRequest) => Promise<any>) {
     this.http.delete<{ Headers: AuthHeaders }>(endpoint, async (req, res) => {
       try {
         const payload = await this.getPayload(req);
@@ -122,10 +121,7 @@ export class ServerController {
     });
   }
 
-  delete(
-    endpoint: string,
-    callback: (req: RestRequest & RestAuthorizationRequest) => Promise<any>
-  ) {
+  delete(endpoint: string, callback: (req: RestRequest & RestAuthorizationRequest) => Promise<any>) {
     this.http.patch<{ Headers: AuthHeaders }>(endpoint, async (req, res) => {
       try {
         const request = this.getRequestObject(req);
@@ -138,10 +134,7 @@ export class ServerController {
     });
   }
 
-  patch(
-    endpoint: string,
-    callback: (req: RestRequest & RestAuthorizationRequest) => Promise<any>
-  ) {
+  patch(endpoint: string, callback: (req: RestRequest & RestAuthorizationRequest) => Promise<any>) {
     this.http.patch<{ Headers: AuthHeaders }>(endpoint, async (req, res) => {
       try {
         const request = this.getRequestObject(req);
@@ -178,13 +171,30 @@ export class ServerController {
       }
     });
   }
+  uploadAuth(
+    endpoint: string,
+    callback: (req: RestRequest & RestAuthorizationRequest & RestFileRequest) => Promise<any>
+  ) {
+    this.http.post<{ Headers: AuthHeaders }>(endpoint, async (req, res) => {
+      try {
+        const payload = await this.getPayload(req);
+        let request = this.getRequestObject(req, payload, req.raw);
+        this.setHeader(res);
+        return JSON.stringify(await callback(request));
+      } catch (ex: any) {
+        this.setResponseCode(res, ex);
+        return ex.message;
+      }
+    });
+  }
 
-  private getRequestObject(req: any, payload?: any) {
+  private getRequestObject(req: any, payload?: any, raw?: any) {
     return {
       query: req.query as any,
       params: req.params as any,
       body: req.body as any,
       payload,
+      raw,
     };
   }
   private setHeader(res: any) {

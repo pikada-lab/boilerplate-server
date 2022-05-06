@@ -1,7 +1,7 @@
 import {
-  User,
-  UserAuthentication,
+  User, 
   UserAuthenticationDTO,
+  UserDAO,
   UserRepository,
 } from "..";
 import { DataAccessService } from "../../../utilites";
@@ -10,6 +10,7 @@ import { UserFinderError } from "../Error";
 
 export class FakeMMUserRepository implements UserRepository {
   private index = new Map<number, User>();
+  private indexPrevState = new Map<number, UserDAO>();
   private indexRole = new Map<number, Map<number, User>>();
   private indexLogin = new Map<string, User>();
 
@@ -22,15 +23,20 @@ export class FakeMMUserRepository implements UserRepository {
     cache?.forEach((r) => {
       this.addIndexes(r);
     });
+    console.log("[*]",this.table, "INIT", cache.length);
   }
 
   private addIndexes(u: User) {
     this.index.set(u.getId(), u);
+    this.updateOldState(u);
     this.indexLogin.set(u.getLogin(), u);
+    this.addIndexRole(u.getRole(), u);
+  }
 
-    if (!this.indexRole.has(u.getRole()))
-      this.indexRole.set(u.getRole(), new Map<number, User>());
-    this.indexRole.get(u.getRole())!.set(u.getId(), u);
+  private addIndexRole(role: number,u: User) { 
+    if (!this.indexRole.has(role))
+      this.indexRole.set(role, new Map<number, User>());
+    this.indexRole.get(role)!.set(u.getId(), u);
   }
   private removeIndex(u: User) {
     this.index.delete(u.getId());
@@ -38,13 +44,42 @@ export class FakeMMUserRepository implements UserRepository {
     this.indexRole.get(u.getRole())?.delete(u.getId());
   }
 
-  async save(user: User): Promise<boolean> { 
+  async save(user: User): Promise<boolean> {
+    this.loginChangeHandler(user); 
+    this.roleChangeHandler(user);
+    this.updateOldState(user);
     return await this.dataAccessService.updateEntity(
       this.table,
       user.getId(),
       user.toJSON()
     );
   }
+
+  //#region handers change detections
+
+  private roleChangeHandler(u: User  ) {
+    const role = u.getRole();
+    const oldRole = this.getOldState(u)?.role;
+    if(role === oldRole) return;
+    if(oldRole) this.indexRole.get(oldRole)?.delete(u.getId());
+    if (role) this.addIndexRole(role, u);
+  }
+  private loginChangeHandler(u: User  ) {
+    const login = u.getLogin();
+    const oldlogin = this.getOldState(u)?.login;
+    if(login === oldlogin) return;
+    if(oldlogin) this.indexLogin.delete(oldlogin);
+    if (login) this.indexLogin.set(login, u);
+  } 
+  private getOldState(article: User) {
+    return this.indexPrevState.get(article.getId());
+  }
+  private updateOldState(article: User) {
+    this.indexPrevState.set(article.getId(), article.toJSON());
+  }
+
+  //#endregion
+  
   async create(data: UserAuthenticationDTO): Promise<User> {
     const user = await this.dataAccessService.createEntity<User>(
       this.table,

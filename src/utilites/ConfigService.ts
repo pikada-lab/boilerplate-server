@@ -14,14 +14,12 @@ export class ConfigService {
       accessSync(join("secret", "public.pem"));
       accessSync(join("secret", "private.pem"));
       await this.readKeys();
+      console.log("JWT KEY READED");
     } catch (ex) {
         console.log(ex);
       await this.writeKeys();
-    }
-    const { publicKey, privateKey } = await jose.generateKeyPair(this.alg);
-    this._privateKey = privateKey;
-    this._publicKey = publicKey;
- 
+      console.log("JWT KEY CREATED");
+    }  
   }
   private async readKeys() {
     const [publicString, privateString] = await Promise.all([

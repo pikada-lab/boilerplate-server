@@ -26,6 +26,7 @@ export class RoleService {
             AccessItem.CAN_SEE_ARTICLE,
             AccessItem.CAN_SEE_TASKS,
             AccessItem.CAN_SEE_PHOTO,
+            AccessItem.CAN_CREATE_ARTICLE,
           ],
         },
         {
@@ -39,6 +40,7 @@ export class RoleService {
             AccessItem.CAN_SEE_PHOTO,
             AccessItem.CAN_SEE_FEE,
             AccessItem.CAN_SEE_ANALITYCS,
+            AccessItem.CAN_CREATE_ARTICLE
           ],
         },
         {
@@ -51,7 +53,8 @@ export class RoleService {
             AccessItem.CAN_SEE_TASKS,
             AccessItem.CAN_SEE_PHOTO,
             AccessItem.CAN_SEE_FEE,
-            AccessItem.CAN_SEE_ANALITYCS,
+            AccessItem.CAN_SEE_ANALITYCS,,
+            AccessItem.CAN_CREATE_ARTICLE
           ],
         },
         {
@@ -65,6 +68,7 @@ export class RoleService {
             AccessItem.CAN_SEE_PHOTO,
             AccessItem.CAN_SEE_ANALITYCS,
             AccessItem.CAN_SEE_ANALITYCS_PHOTO,
+            AccessItem.CAN_CREATE_ARTICLE,
           ],
         },
         {
@@ -80,6 +84,7 @@ export class RoleService {
             AccessItem.CAN_SEE_ANALITYCS_PHOTO,
             AccessItem.CAN_SEE_USERS,
             AccessItem.CAN_SEE_FEE_REPORTS,
+            AccessItem.CAN_CREATE_ARTICLE
           ],
         },
         {
@@ -96,6 +101,7 @@ export class RoleService {
             AccessItem.CAN_SEE_USERS,
             AccessItem.CAN_SEE_TEST,
             AccessItem.CAN_SEE_FEE_REPORTS,
+            AccessItem.CAN_CREATE_ARTICLE
           ],
         },
       ] as RoleDAO[];

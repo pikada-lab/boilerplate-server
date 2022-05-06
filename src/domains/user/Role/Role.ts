@@ -10,6 +10,7 @@ export enum AccessItem {
   CAN_SEE_FEE_REPORTS,
   CAN_SEE_ANALITYCS_PHOTO,
   CAN_SEE_TEST,
+  CAN_CREATE_ARTICLE
 }
 
 export interface RoleDAO {

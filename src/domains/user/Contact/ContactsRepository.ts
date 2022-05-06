@@ -14,6 +14,7 @@ export class ContactsRepository {
     cache?.forEach((r) => {
       this.addIndexes(r);
     });
+    console.log("[*]",this.table, "INIT", cache.length);
   }
 
   private addIndexes(u: UserContact) {
