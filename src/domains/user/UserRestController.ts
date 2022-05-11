@@ -14,6 +14,7 @@ import {
   UserAuthorizationService,
   UserSettingService,
 } from "./services";
+import { UserPresenter } from "./UserPresenter";
 
 export class UserRestController implements onInit {
   constructor(
@@ -22,7 +23,8 @@ export class UserRestController implements onInit {
     private userService: UserSettingService,
     private authService: UserAuthorizationService,
     private loginService: UserAuthenticationService,
-    private role: RoleService
+    private role: RoleService,
+    private presenter: UserPresenter
   ) {}
 
   async init() {
@@ -32,13 +34,14 @@ export class UserRestController implements onInit {
 
   //#region query zone
   private setRequestController() {
+    this.server.getAuth("/v1/user/role", async (req) => this.getAllRoles(req));
+    this.server.getAuth("/v1/user/role/:id", async (req) => this.getOneRole(req));
     this.server.getAuth("/v1/user/", async (req) => this.getAllUser(req));
     this.server.getAuth("/v1/user/:id", async (req) => this.getUserById(req));
     this.server.getAuth("/v1/user/me", async (req) => this.getUserByToken(req));
     this.server.getAuth("/v1/user/:id/login", async (req) =>
       this.getLoginById(req)
     );
-
     this.server.getAuth("/v1/user/2fa/qr", async (req, res) =>
       this.getQRcode(req, res)
     );
@@ -47,6 +50,12 @@ export class UserRestController implements onInit {
     );
   }
 
+  private async getAllRoles(req: RestRequest & RestAuthorizationRequest) {
+    return this.role.getAll();
+  }
+  private async getOneRole(req: RestRequest & RestAuthorizationRequest) {
+    return this.role.getOne(+req.params.id);
+  }
   private async get2FARestoreCodes(
     req: RestRequest & RestAuthorizationRequest,
     res: any
@@ -84,20 +93,20 @@ export class UserRestController implements onInit {
       const specification = new AnyUserSpecification()
         .where("firstName")
         .like(req.query.firstName);
-      return this.repository.getBySpecification(specification);
+      return this.presenter.mapForAll(this.repository.getBySpecification(specification));
     } else {
-      return this.repository.getAll().map((u) => u.getUserDetail());
+      return this.presenter.mapForAll(this.repository.getAll());
     }
   }
 
   private async getUserById(req: RestRequest) {
     if (!req.params.id) throw new UserError("Нет номера пользователя");
-    return this.repository.getOne(+req.params.id).getUserDetail();
+    return this.presenter.forAll(this.repository.getOne(+req.params.id));
   }
 
   private async getUserByToken(req: RestAuthorizationRequest) {
     console.log(req.payload);
-    return this.repository.getOne(+req.payload.id).getUserDetail();
+    return this.presenter.forAll(this.repository.getOne(+req.payload.id));
   }
   //#endregion
   //#region Command zone

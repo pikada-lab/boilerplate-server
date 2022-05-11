@@ -25,6 +25,9 @@ import {
 } from "./Verify/UserVerefyStrategy";
 import { UserVerifyRecordFactory } from "./Verify/UserVerifyRecordFactory";
 import { RoleComponent } from "./Role/RoleComponent";
+import { FakeMMUserFacade, UserFacade } from "./UserFacade";
+import { NotificationService } from "./NotificationService";
+import { UserPresenter } from "./UserPresenter";
 
 export class UserModule {
   private repository!: UserRepository;
@@ -37,13 +40,14 @@ export class UserModule {
   private verifyStrategy: UserVerefyStrategy;
   private twoFactorRepository: TwoFactorRepository;
   private roleComponent: RoleComponent;
+  private facade: UserFacade;
+  private notificationService: NotificationService;
   constructor(
     config: ConfigService,
     server: ServerController,
     dataAccessService: DataAccessService,
     mailPort: MailPort
   ) {
- 
     this.verifyRepository = new UserVerifyRepository(dataAccessService);
     this.repository = new FakeMMUserRepository(dataAccessService);
     this.contactsRepository = new ContactsRepository(dataAccessService);
@@ -55,10 +59,16 @@ export class UserModule {
       this.repository,
       this.verifyRepository
     );
+
+    this.notificationService = new NotificationService(
+      this.repository,
+      mailPort
+    );
     this.userAuthorizationService = new FakeMMUserAuthorizationService(
       this.repository,
       this.verifyStrategy,
-      this.contactsRepository
+      this.roleComponent.getService(),
+      this.notificationService
     );
     this.userAuthenticationService = new FakeMMUserAuthenticationService(
       this.repository,
@@ -69,14 +79,25 @@ export class UserModule {
       this.repository,
       this.contactsRepository
     );
+
+    this.facade = new FakeMMUserFacade(
+      this.userAuthorizationService,
+      this.notificationService,
+      this.roleComponent.getService(),
+      this.repository
+    );
+
+    const presenter = new UserPresenter(this.facade)
     this.userController = new UserRestController(
       server,
       this.repository,
       this.userSettingService,
       this.userAuthorizationService,
       this.userAuthenticationService,
-      this.roleComponent.getService()
+      this.roleComponent.getService(),
+      presenter
     );
+ 
 
     dataAccessService.setFactory("Contacts", contactFactory);
     dataAccessService.setFactory("VerifyRecord", UserVerifyRecordFactory);
@@ -97,5 +118,9 @@ export class UserModule {
 
   getRoleChecker() {
     return this.roleComponent.getService();
+  }
+
+  getFacade(): UserFacade {
+    return this.facade;
   }
 }

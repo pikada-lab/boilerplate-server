@@ -33,6 +33,10 @@ export class FakeMMUser implements User, UserAuthorization, UserAuthentication {
     return this.STATUS;
   }
 
+  isTrainee(): boolean {
+    return this.role === 2;
+  }
+
   getId(): number {
     return this.id;
   }

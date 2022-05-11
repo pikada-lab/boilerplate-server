@@ -1,3 +1,10 @@
+import { AccessItem } from "../user/Role/Role";
+  
+ 
+export interface RoleChecker {
+  checkUserWithThrow(userId: number, access: AccessItem): void;
+}
+
 export type TaskStatus =
   | 'CREATED'
   | 'PUBLISHED'
@@ -50,26 +57,34 @@ export interface Article {
   nick: string;
   photographer: string;
 
-  status: ArticleStatus
+  status: ArticleStatus;
+
+  createdAt: number; 
+  publishedAt?: number; 
 }
 
 export interface History {
-  id: number;
-  task: number;
+  id?: number; 
   date: number;
   user: number;
   status: string;
   comment: string;
 }
+export interface TaskHistory extends History{
+  task: number; 
+}
+export interface ArticleHistory extends History {
+  article: number; 
+}
 export type FeeStatus = "CREATED" | "PAID" | "CANCELED";
 export interface Fee {
   id: number;
   user: number;
-  dateCreate: number;
-  dateExecuted: number;
+  dateCreated: number;
+  dateExecuted?: number;
   value: number;
-  task?: number;
+  task: number;
   comment: string;
   status: FeeStatus;
-  account?: number;
+  account?: number; 
 }

@@ -87,6 +87,7 @@ export class TaskRepository {
     if (oldAuthor) this.removeIndexAuthor(oldAuthor, task);
     if (author) this.addIndexAuthor(author, task);
   }
+  
   private editorChangeHandler(task: AuthorTask  ) {
     const editor = task.getEditor();
     const oldEditor = this.getOldState(task)?.editor;
@@ -111,11 +112,11 @@ export class TaskRepository {
   }
   //#endregion
 
-  async create(data: Article): Promise<AuthorTask> {
+  async create(data: Task | {editor: number}): Promise<AuthorTask> {
     const article = await this.dataAccessService.createEntity<AuthorTask>(
       this.table,
       Object.assign(
-        AuthorTask.create(data.editor),
+        AuthorTask.create(data.editor!),
         {
           updateAt: +new Date(),
           createAt: +new Date(),
@@ -126,7 +127,6 @@ export class TaskRepository {
     this.addIndexes(article); 
     return article;
   }
- 
 
   async delete(id: number): Promise<boolean> {
     const user = await this.findOne(id);
@@ -134,7 +134,6 @@ export class TaskRepository {
     if (result && user) this.removeIndex(user);
     return result;
   }
-
 
   getAll(): AuthorTask[] {
     return Array.from(this.index.values());

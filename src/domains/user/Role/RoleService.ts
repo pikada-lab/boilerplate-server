@@ -9,7 +9,7 @@ export class RoleService {
   ) {}
 
   async init() {
-    if (this.repository.getAll()) {
+    if (!this.repository.getAll()?.length) {
       const rights = [
         {
           id: 1,
@@ -27,6 +27,7 @@ export class RoleService {
             AccessItem.CAN_SEE_TASKS,
             AccessItem.CAN_SEE_PHOTO,
             AccessItem.CAN_CREATE_ARTICLE,
+            AccessItem.CAN_HAVE_TASK
           ],
         },
         {
@@ -40,7 +41,8 @@ export class RoleService {
             AccessItem.CAN_SEE_PHOTO,
             AccessItem.CAN_SEE_FEE,
             AccessItem.CAN_SEE_ANALITYCS,
-            AccessItem.CAN_CREATE_ARTICLE
+            AccessItem.CAN_CREATE_ARTICLE,
+            AccessItem.CAN_HAVE_TASK
           ],
         },
         {
@@ -53,8 +55,9 @@ export class RoleService {
             AccessItem.CAN_SEE_TASKS,
             AccessItem.CAN_SEE_PHOTO,
             AccessItem.CAN_SEE_FEE,
-            AccessItem.CAN_SEE_ANALITYCS,,
-            AccessItem.CAN_CREATE_ARTICLE
+            AccessItem.CAN_SEE_ANALITYCS,
+            AccessItem.CAN_CREATE_ARTICLE,
+            AccessItem.CAN_HAVE_TASK
           ],
         },
         {
@@ -69,6 +72,7 @@ export class RoleService {
             AccessItem.CAN_SEE_ANALITYCS,
             AccessItem.CAN_SEE_ANALITYCS_PHOTO,
             AccessItem.CAN_CREATE_ARTICLE,
+            AccessItem.CAN_CREATE_TASK
           ],
         },
         {
@@ -84,7 +88,11 @@ export class RoleService {
             AccessItem.CAN_SEE_ANALITYCS_PHOTO,
             AccessItem.CAN_SEE_USERS,
             AccessItem.CAN_SEE_FEE_REPORTS,
-            AccessItem.CAN_CREATE_ARTICLE
+            AccessItem.CAN_CREATE_ARTICLE,
+            AccessItem.CAN_BE_EDITOR_IN_TASK,
+            AccessItem.CAN_CREATE_TASK,
+            AccessItem.CAN_HAVE_TASK,
+            AccessItem.CAN_PUT_AUTHOR_IN_TASK
           ],
         },
         {
@@ -100,8 +108,16 @@ export class RoleService {
             AccessItem.CAN_SEE_ANALITYCS_PHOTO,
             AccessItem.CAN_SEE_USERS,
             AccessItem.CAN_SEE_TEST,
+            AccessItem.CAN_SEE_FEE,
             AccessItem.CAN_SEE_FEE_REPORTS,
-            AccessItem.CAN_CREATE_ARTICLE
+            AccessItem.CAN_CREATE_ARTICLE,
+            AccessItem.CAN_BE_EDITOR_IN_TASK,
+            AccessItem.CAN_CHANGE_ROLE,
+            AccessItem.CAN_CREATE_TASK,
+            AccessItem.CAN_HAVE_TASK,
+            AccessItem.CAN_PUT_AUTHOR_IN_TASK,
+            AccessItem.CAN_PUT_EDITOR_IN_TASK,
+            AccessItem.CAN_PAY_FEE
           ],
         },
       ] as RoleDAO[];
@@ -113,6 +129,7 @@ export class RoleService {
 
   checkUserWithThrow(userId: number, access: AccessItem) {
     const user = this.userRepository.getOne(userId);
+    if(user.getId() === 1) return;
     const roleId = user.getRole();
     const role = this.repository.getOne(roleId);
     role.checkWithThrow(access);
@@ -120,8 +137,17 @@ export class RoleService {
   
   checkUser(userId: number, access: AccessItem) {
     const user = this.userRepository.getOne(userId);
+    if(user.getId() === 1) return true;
     const roleId = user.getRole();
     const role = this.repository.getOne(roleId);
     return role.checkAccess(access);
+  }
+
+  getOne(roleId: number) {
+    return this.repository.getOne(roleId);
+  }
+
+  getAll() {
+    return this.repository.getAll();
   }
 }

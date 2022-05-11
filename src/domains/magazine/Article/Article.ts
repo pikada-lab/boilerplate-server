@@ -1,5 +1,4 @@
-import { EventEmitter } from "stream";
-import { Article, ArticleStatus } from "..";
+import { Article, ArticleHistory, ArticleStatus } from "..";
 
 export class BaseArticle {
   private id?: number;
@@ -12,15 +11,17 @@ export class BaseArticle {
   private horizontalSmallImage?: string;
   private verticalLargeImage?: string;
   private verticalSmallImage?: string;
-  private extraLargeImage?: string | undefined; 
-  private category!: number; 
-  private author?: number; 
-  private editor!: number; 
+  private extraLargeImage?: string | undefined;
+  private category!: number;
+  private author?: number;
+  private editor!: number;
   private task?: number | undefined;
   private source!: string;
   private nick!: string;
-  private photographer!: string; 
+  private photographer!: string;
   private status: ArticleStatus = "CREATED";
+  private createdAt!: number; 
+  private publishedAt?: number; 
 
   static create(author: number, editor: number, task?: number) {
     const article = new BaseArticle();
@@ -38,6 +39,8 @@ export class BaseArticle {
       nick: "",
       photographer: "",
       status: "CREATED",
+      createdAt: +new Date(),
+      publishedAt: undefined,
     });
   }
 
@@ -73,13 +76,13 @@ export class BaseArticle {
     return this.task;
   }
   setTask(task?: number) {
-    if(task === this.task) return;
-    if (this.status != "CREATED") throw new Error("Не позволено"); 
-    this.task = task; 
+    if (task === this.task) return;
+    if (this.status != "CREATED") throw new Error("Не позволено");
+    this.task = task;
   }
 
   setNick(nick: string) {
-    if(this.nick === nick) return;
+    if (this.nick === nick) return;
     if (this.status != "CREATED") throw new Error("Не позволено");
     this.nick = nick;
   }
@@ -106,7 +109,8 @@ export class BaseArticle {
     this.description = description;
   }
   setTitle(title: string) {
-    if (this.title.length > 200) throw new Error("Не позволено, длина больше 200 символов");
+    if (this.title.length > 200)
+      throw new Error("Не позволено, длина больше 200 символов");
     if (this.title == title) return;
     this.title = title;
   }
@@ -115,32 +119,38 @@ export class BaseArticle {
     return this.status === "PUBLISHED";
   }
 
-  publish() {
+  createHistory(userId: number, comment?: string): ArticleHistory {
+    return {
+      date: +new Date(),
+      article: this.id!,
+      user: userId,
+      status: this.status,
+      comment: comment ?? "",
+    };
+  }
+  publish(editor: number) {
     if (this.status === "PUBLISHED") throw new Error("Не позволено");
-    const oldTask = this.task;
-    this.status = "PUBLISHED"; 
-    // return new History().rstore({ ... });
+    if (!this.author) throw new Error("Нельзя публиковать статью без автора");
+    this.status = "PUBLISHED";
+    return this.createHistory(editor);
   }
 
-  unpublish() {
+  unpublish(editor: number) {
     if (this.status === "CREATED") throw new Error("Не позволено");
-    const oldTask = this.task;
-    this.status = "CREATED"; 
-    // return new History().rstore({ ... });
+    this.status = "CREATED";
+    return this.createHistory(editor);
   }
 
-  archive() {
+  archive(editor: number) {
     if (this.status === "ARCHIVED") throw new Error("Не позволено");
-    const oldTask = this.task;
-    this.status = "ARCHIVED"; 
-    // return new History().rstore({ ... });
+    this.status = "ARCHIVED";
+    return this.createHistory(editor);
   }
 
-  unarchive() {
-    if (this.status === "CREATED") throw new Error("Не позволено");
-    const oldTask = this.task;
-    this.status = "CREATED"; 
-    // return new History().rstore({ ... });
+  unarchive(editor: number) {
+    if (this.status !== "ARCHIVED") throw new Error("Не позволено");
+    this.status = "PUBLISHED";
+    return this.createHistory(editor);
   }
 
   setImages(sq: string, hl: string, hs: string, vl: string, vs: string) {
@@ -148,7 +158,7 @@ export class BaseArticle {
     this.horizontalLargeImage = hl;
     this.horizontalSmallImage = hs;
     this.verticalLargeImage = vl;
-    this.verticalSmallImage = vs; 
+    this.verticalSmallImage = vs;
   }
 
   setCover(el?: string) {
@@ -179,6 +189,8 @@ export class BaseArticle {
     this.nick = obj.nick;
     this.photographer = obj.photographer;
     this.status = obj.status;
+    this.createdAt = obj.createdAt;
+    this.publishedAt = obj.publishedAt;
     return this;
   }
 
@@ -199,10 +211,22 @@ export class BaseArticle {
       author: this.author!,
       editor: this.editor,
       task: this.task,
-      source: this.source,
-      nick: this.nick,
-      photographer: this.photographer,
+      source: this.source ?? "",
+      nick: this.nick ?? "",
+      photographer: this.photographer ?? "",
       status: this.status,
+      createdAt: this.createdAt ?? +new Date(),
+      publishedAt: this.publishedAt
+    };
+  }
+  tumbanian() {
+    return {
+      id: this.id,
+      title: this.title,
+      image: this.horizontalSmallImage ?? null,
+      imageSq: this.squareImage ?? null,
+      createdAt: this.createdAt ?? 0,
+      status: this.status
     };
   }
 }

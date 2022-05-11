@@ -36,6 +36,7 @@ const authorizationService = new FakeMMUserAuthorizationService(
   repository,
   verifyStrategy,
   {} as any,
+  {} as any,
 );
 describe("UserAuthorizationService", () => {
   describe("tryToRemindUsersAccess", () => {

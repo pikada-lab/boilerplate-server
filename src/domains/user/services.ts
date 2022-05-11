@@ -27,7 +27,7 @@ export interface UserAuthenticationService extends onInit {
 
   isTwoFactorAuth(userId: number): Promise<boolean>
   get2FARestoreCodes(userId: number):  Promise<string[]>;
-
+ 
 }
 
 export interface UserAuthorizationService extends onInit { 
@@ -44,4 +44,5 @@ export interface UserAuthorizationService extends onInit {
   getLoginDetails(
     userId: number
   ): Promise<{ login: string; loginType: string }>;
+  upgradeTrainee(userId: number): Promise<void>;
 }

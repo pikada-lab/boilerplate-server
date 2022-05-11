@@ -23,7 +23,6 @@ export class NodeMailPort implements MailPort {
       subject: subject,
       html: text,
     });
-
-    console.log("Message sent: %s", info.messageId);
+    // console.log("Message sent: %s", info.messageId);
   }
 }

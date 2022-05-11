@@ -1,6 +1,6 @@
-import { History } from "..";
+import {  TaskHistory } from "../..";
 
-export class BaseHistory {
+export class BaseTaskHistory {
   private  id?: number;
   private  task!: number;
   private  date!: number;
@@ -8,6 +8,9 @@ export class BaseHistory {
   private  status!: string;
   private  comment!: string;
 
+  isEnd() {
+    return this.status === "ENDED"
+  }
 
   constructor() {}
 
@@ -19,23 +22,24 @@ export class BaseHistory {
   }
   static create(ref: any) {
     if(!ref.date) ref.date = new Date();
-    return new BaseHistory().restore(ref);
+    return new BaseTaskHistory().restore(ref);
   }
 
   setComment(comment: string) {
     this.comment = comment;
   }
 
-  restore(obj: History) {
+  restore(obj: TaskHistory) {
     this.id = obj.id;
     this.task = obj.task;
     this.date = obj.date;
     this.user = obj.user;
     this.status = obj.status;
     this.comment = obj.comment;
+    return this;
   }
  
-  toJSON(): History {
+  toJSON(): TaskHistory {
     return {
       id: this.id!,
       task: this.task,

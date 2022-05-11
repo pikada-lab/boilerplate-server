@@ -1,30 +1,72 @@
-import { EventEmitter } from "stream";
-import { Article, Task, TaskStatus } from "..";
+import {   Task, TaskStatus, TaskHistory } from "..";
+import { TaskError } from "../error";
 
 export class AuthorTask {
   private id?: number;
 
   private title!: string;
   private description!: string;
+
   private status: TaskStatus = "CREATED";
- 
+
   private editor?: number;
 
   private dateEnd?: Date;
   private fee?: number;
- 
+
   private author?: number;
- 
+
   private article?: number;
 
   static create(editor: number) {
     return new AuthorTask().restore({
-      id: 0,
       title: "Новое редакционное задание",
       description: "Описание задания",
       editor,
       status: "CREATED",
-    });
+    } as any);
+  }
+
+  setDescription(editor: number, ref: { title: string; description: string }) {
+    if (["ENDED", "FINISHED", "CANCELED", "ARCHIVED"].includes(this.status))
+      throw new TaskError("Не позволено");
+    if (!this.isBelongEditor(editor)) throw new TaskError("Не позволено");
+    this.title = ref.title;
+    this.description = ref.description;
+    return this.createHistory(editor, "Задание изменено");
+  }
+  setDateEnd(editor:number, dateEnd: string | number | Date) {
+    if (!this.isBelongEditor(editor)) throw new TaskError("Не позволено");
+    const date = new Date(dateEnd);
+    if(!this.isValidDate(date)) throw new TaskError("Дата должна быть датой");
+    if(+date < Date.now() + 6e3 * 60 * 24) throw new TaskError("Срок выполнения задачи должен быть больше 1 суток");
+    this.dateEnd = date;
+    return this.createHistory(editor, "Дата сдачи задания изменена на "+date.toJSON().substring(0,10));
+  }
+
+  private isValidDate(d: any): d is Date {
+    return d instanceof Date && !isNaN(d as any);
+  }
+
+  setFee(editor: number, fee: number) {
+    if (this.status !== "CREATED") throw new TaskError("Не позволено");
+    if (!this.isBelongEditor(editor)) throw new TaskError("Не позволено");
+    if (fee < 0)
+      throw new TaskError("Не допустимо. Нельзя поставить атрицательную сумму");
+    this.fee = fee;
+    return this.createHistory(editor, "Установлен новый гонорар");
+  }
+
+  getFee() {
+    return this.fee ?? 0;
+  }
+
+  getStatus() {
+    return this.status;
+  }
+  getDateEnd() {
+    if (!this.dateEnd) return new Date(0);
+    return new Date(this.dateEnd!);
   }
   getId() {
     return this.id;
@@ -36,10 +78,10 @@ export class AuthorTask {
 
   setAuthor(author?: number) {
     if (this.author === author) return;
-    if (!["CREATED", "PUBLISHED"].includes(this.status)) throw new Error("Нельзя заменять Автора после одобрения");
- 
+    if (!["CREATED", "PUBLISHED"].includes(this.status))
+      throw new TaskError("Нельзя заменять Автора после одобрения");
+
     this.author = author;
- 
   }
 
   getEditor() {
@@ -48,36 +90,32 @@ export class AuthorTask {
 
   setEditor(editor?: number) {
     if (this.editor === editor) return;
-    if (this.status !== "CREATED" && !editor) throw new Error("Нельзя у активного задания убирать автора");
- 
-    this.editor = editor; 
+    if (this.status !== "CREATED" && !editor)
+      throw new TaskError("Нельзя у активного задания убирать автора");
+
+    this.editor = editor;
   }
 
   getArticle() {
     return this.article;
   }
 
-  createHistory(userId: number, comment?: string) {
+  createHistory(userId: number, comment?: string): TaskHistory {
     return {
-      date: new Date(),
-      task: this.id,
+      date: +new Date(),
+      task: this.id!,
       user: userId,
       status: this.status,
       comment: comment ?? "",
     };
   }
 
-  setArticle(art?: Article) {
-    if (this.article === art?.id) return;
+  setArticle(art?: number) {
+    if (this.article === art) return;
     if (["ENDED", "FINISHED", "ARCHIVED", "CANCELED"].includes(this.status))
-      throw new Error("Нельзя заменять статью после одобрения"); 
-    if (art) {
-      this.article = art.id;
-    } else {
-      this.article = undefined;
-    } 
+      throw new TaskError("Нельзя заменять статью после одобрения");
+    this.article = art ? art : undefined;
   }
- 
 
   public canPublish(editor: number) {
     if (this.status != "CREATED") return false;
@@ -90,9 +128,10 @@ export class AuthorTask {
     return true;
   }
 
+  // Предназначено для сервиса статей
   publish(editor: number) {
-    if (this.status === "PUBLISHED") return [];
-    if (!this.canPublish(editor)) throw new Error("Не позволено");
+    if (this.status === "PUBLISHED") throw new TaskError("Уже исполнено");
+    if (!this.canPublish(editor)) throw new TaskError("Не позволено");
     if (this.author) {
       return this.distribute(this.author);
     }
@@ -103,24 +142,28 @@ export class AuthorTask {
   public canUnpublish(editor: number) {
     return this.status === "PUBLISHED" && this.isBelongEditor(editor);
   }
+
+  // Предназначено для сервиса статей
   unpublish(editor: number) {
-    if (!this.canUnpublish(editor)) throw new Error("Не позволено");
+    if (this.status === "CREATED") throw new TaskError("Уже исполнено");
+    if (!this.canUnpublish(editor)) throw new TaskError("Не позволено");
     this.status = "CREATED";
-    this.createHistory(editor);
+    return this.createHistory(editor);
   }
 
   public canDistribute(author: number) {
     if (this.status != "CREATED" && this.status != "PUBLISHED") return false;
-    if (!this.author) return false;
-    if (!this.isBelongAuthor(author)) return;
+    // if (!this.author) return false;
+    // if (!this.isBelongAuthor(author)) return;
     return true;
   }
 
   distribute(author: number) {
-    if (this.status === "DISTRIBUTED") return;
-    if (!this.canDistribute(author)) throw new Error("Не позволено");
+    if (this.status === "DISTRIBUTED") throw new TaskError("Уже исполнено");
+    if (!this.canDistribute(author)) throw new TaskError("Не позволено");
+    this.setAuthor(author);
     this.status = "DISTRIBUTED";
-    this.createHistory(author);
+    return this.createHistory(author);
   }
 
   public canRefuse(author: number) {
@@ -128,11 +171,11 @@ export class AuthorTask {
   }
 
   refuse(author: number) {
-    if (this.status === "CREATED") return;
-    if (!this.canRefuse(author)) throw new Error("Не позволено");
+    if (this.status === "PUBLISHED") throw new TaskError("Уже исполнено");
+    if (!this.canRefuse(author)) throw new TaskError("Не позволено");
     this.status = "PUBLISHED";
     this.setAuthor();
-    this.createHistory(author);
+    return this.createHistory(author);
   }
 
   public canSendToResolve(author: number) {
@@ -144,10 +187,10 @@ export class AuthorTask {
   }
 
   sendToResolve(author: number) {
-    if (this.status === "PENDING_RESOLVE") return;
-    if (!this.canSendToResolve(author)) throw new Error("Не позволено");
+    if (this.status === "PENDING_RESOLVE") throw new TaskError("Уже исполнено");
+    if (!this.canSendToResolve(author)) throw new TaskError("Не позволено");
     this.status = "PENDING_RESOLVE";
-    this.createHistory(author);
+    return this.createHistory(author);
   }
 
   public canRevision(author: number) {
@@ -156,11 +199,10 @@ export class AuthorTask {
   }
 
   revision(author: number) {
-    if (this.status === "DISTRIBUTED") return;
-    if (!this.canRevision(author)) throw new Error("Не позволено");
+    if (this.status === "DISTRIBUTED") throw new TaskError("Уже исполнено");
+    if (!this.canRevision(author)) throw new TaskError("Не позволено");
     this.status = "DISTRIBUTED";
-    if (!this.isBelongAuthor(author)) return;
-    this.createHistory(author);
+    return this.createHistory(author);
   }
 
   public canReject(editor: number) {
@@ -169,11 +211,12 @@ export class AuthorTask {
   }
 
   reject(editor: number) {
-    if (this.status === "REJECTED") return;
-    if (this.status != "PENDING_RESOLVE") throw new Error("Не позволено");
-    if (!this.isBelongEditor(editor)) throw new Error("Вы не ответственный редактор");
+    if (this.status === "REJECTED") throw new TaskError("Уже исполнено");
+    if (this.status != "PENDING_RESOLVE") throw new TaskError("Не позволено");
+    if (!this.isBelongEditor(editor))
+      throw new TaskError("Вы не ответственный редактор");
     this.status = "REJECTED";
-    this.createHistory(editor);
+    return this.createHistory(editor);
   }
 
   public canResolve(editor: number) {
@@ -182,11 +225,12 @@ export class AuthorTask {
   }
 
   resolve(editor: number) {
-    if (this.status === "FINISHED") return;
-    if (this.status != "PENDING_RESOLVE") throw new Error("Не позволено");
-    if (!this.isBelongEditor(editor)) throw new Error("Вы не ответственный редактор");
+    if (this.status === "FINISHED") throw new TaskError("Уже исполнено");
+    if (this.status != "PENDING_RESOLVE") throw new TaskError("Не позволено");
+    if (!this.isBelongEditor(editor))
+      throw new TaskError("Вы не ответственный редактор");
     this.status = "FINISHED";
-    this.createHistory(editor);
+    return this.createHistory(editor);
   }
 
   public canEnd(editor: number) {
@@ -195,11 +239,12 @@ export class AuthorTask {
   }
 
   end(editor: number) {
-    if (this.status === "ENDED") return;
-    if (this.status != "FINISHED") throw new Error("Не позволено");
-    if (!this.isBelongEditor(editor)) throw new Error("Вы не ответственный редактор");
+    if (this.status === "ENDED") throw new TaskError("Уже исполнено");
+    if (this.status != "FINISHED") throw new TaskError("Не позволено");
+    if (!this.isBelongEditor(editor))
+      throw new TaskError("Вы не ответственный редактор");
     this.status = "ENDED";
-    this.createHistory(editor);
+    return this.createHistory(editor);
   }
 
   public canCanceled(editor: number) {
@@ -208,10 +253,11 @@ export class AuthorTask {
   }
 
   cancel(editor: number) {
-    if (this.status === "CANCELED") return;
-    if (!this.isBelongEditor(editor)) throw new Error("Вы не ответственный редактор");
+    if (this.status === "CANCELED") throw new TaskError("Уже исполнено");
+    if (!this.isBelongEditor(editor))
+      throw new TaskError("Вы не ответственный редактор");
     this.status = "CANCELED";
-    this.createHistory(editor);
+    return this.createHistory(editor);
   }
 
   public canArchive(editor: number) {
@@ -220,10 +266,10 @@ export class AuthorTask {
   }
 
   archive(editor: number) {
-    if (this.status === "ARCHIVED") return;
-    if (!this.canArchive(editor)) throw new Error("Не позволено");
+    if (this.status === "ARCHIVED") throw new TaskError("Уже исполнено");
+    if (!this.canArchive(editor)) throw new TaskError("Не позволено");
     this.status = "ARCHIVED";
-    this.createHistory(editor);
+    return this.createHistory(editor);
   }
 
   isBelongAuthor(userId: number) {

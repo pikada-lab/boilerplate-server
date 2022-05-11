@@ -33,7 +33,7 @@ describe("UserRepository", () => {
             login: "info@pikada-lab.ru",
             hash: "",
             sol: "",
-          });
+          }); 
         })
         .then((u) => {
           done();

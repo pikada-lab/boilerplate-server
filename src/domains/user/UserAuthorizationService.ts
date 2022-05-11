@@ -1,16 +1,26 @@
 import { User, UserRepository } from ".";
+import { MailPort } from "../ports/MailPort";
 import { ContactsRepository } from "./Contact/ContactsRepository";
 
 import { UserError } from "./Error";
+import { NotificationService } from "./NotificationService";
+import { AccessItem } from "./Role/Role";
 import { UserAuthorizationService } from "./services";
 import { UserVerefyStrategy } from "./Verify/UserVerefyStrategy";
 import { VerifyType } from "./Verify/UserVerifyRecord";
 
-export class FakeMMUserAuthorizationService implements UserAuthorizationService {
+export interface RoleChecker {
+  checkUserWithThrow(userId: number, access: AccessItem): void;
+}
+
+export class FakeMMUserAuthorizationService
+  implements UserAuthorizationService
+{
   constructor(
     private repository: UserRepository,
     private verifyStrategy: UserVerefyStrategy,
-    private contactRepository: ContactsRepository
+    private roleChecker: RoleChecker,
+    private notify: NotificationService
   ) {}
   async init() {
     // TODO create first user
@@ -24,26 +34,48 @@ export class FakeMMUserAuthorizationService implements UserAuthorizationService 
     await this.verifyStrategy.sendCode(user.getId(), VerifyType.LOGIN);
     return user;
   }
-  async changeRole(userId: number, roleId: number, adminId: number): Promise<User> {
+  async changeRole(
+    userId: number,
+    roleId: number,
+    initiator: number
+  ): Promise<User> {
     const user = this.repository.getOne(userId);
-    const admin = this.repository.getOne(adminId);
     if (user.getRole() === roleId) return user;
-    if (![7, 6].includes(admin.getRole())) {
-      throw new UserError("Нет прав на изменение роли");
-    }
-    if (adminId === userId) throw new UserError("Этот метод не предназначен для редактирования самого себя");
-
+    this.roleChecker.checkUserWithThrow(initiator, AccessItem.CAN_CHANGE_ROLE);
+    if (initiator === userId)
+      throw new UserError(
+        "Этот метод не предназначен для редактирования самого себя"
+      );
     user.setRole(roleId);
     await this.repository.save(user);
     return user;
+  }
+
+  async upgradeTrainee(userId: number): Promise<void> {
+    const trainee = this.repository.getOne(userId);
+    if (!trainee.isTrainee()) return;
+    trainee.setRole(3);
+    await this.repository.save(trainee);
+    await this.notify.send(
+      userId,
+      "Поздравляем с повышением",
+      "Ваша роль в нашем журнале повышена до Журналиста"
+    );
   }
   async tryToRemindUsersAccess(login: string): Promise<void> {
     const user = this.repository.getByLogin(login);
     await this.verifyStrategy.sendCode(user.getId(), VerifyType.REMIND);
   }
 
-  async remindPassword(userId: string, code: string, password: string): Promise<void> {
-    if (!(await this.verifyStrategy.checkCode(code, +userId, VerifyType.REMIND))) throw new UserError("It's not match");
+  async remindPassword(
+    userId: string,
+    code: string,
+    password: string
+  ): Promise<void> {
+    if (
+      !(await this.verifyStrategy.checkCode(code, +userId, VerifyType.REMIND))
+    )
+      throw new UserError("It's not match");
     await this.changePassword(+userId, password);
   }
 
@@ -55,7 +87,7 @@ export class FakeMMUserAuthorizationService implements UserAuthorizationService 
 
   // need transaction
   async delete(userId: number): Promise<boolean> {
-    const user = this.repository.getOne(userId); 
+    const user = this.repository.getOne(userId);
     // Удалить все контакты в транзакции, все пометки о верефикации
     return await this.repository.delete(user.getId());
   }
@@ -86,7 +118,11 @@ export class FakeMMUserAuthorizationService implements UserAuthorizationService 
   }
 
   async verifyLogin(userId: number, code: string) {
-    const isVerify = await this.verifyStrategy.checkCode(code, userId, VerifyType.LOGIN);
+    const isVerify = await this.verifyStrategy.checkCode(
+      code,
+      userId,
+      VerifyType.LOGIN
+    );
     if (!isVerify) return false;
     const user = this.repository.getOne(userId);
     user.checkLogin();

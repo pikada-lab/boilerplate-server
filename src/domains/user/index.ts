@@ -19,6 +19,8 @@ export interface User extends UserAuthentication, UserAuthorization {
   getUserDetail(): UserDTO;
   toJSON(): UserDAO;
   restore(user: UserDAO): User;
+
+  isTrainee(): boolean;
 }
 
 export interface UserDAO
