@@ -1,5 +1,5 @@
 import { RoleChecker } from "..";
-import { AccessItem } from "../../user/Role/Role"; 
+import { AccessItem } from "../../user/Role/Role";
 import { TaskError } from "../error";
 import { FeeService } from "./Fee/FeeService";
 import { HistoryRepository } from "./History/HistoryRepository";
@@ -11,7 +11,7 @@ export class TaskService {
     private taskRepository: TaskRepository,
     private historyRepository: HistoryRepository,
     private roleChecker: RoleChecker,
-    private feeService: FeeService,
+    private feeService: FeeService
   ) {}
 
   async init() {}
@@ -58,21 +58,27 @@ export class TaskService {
     if (initiator !== author) {
       this.checkCanUserPutAuthorInTask(initiator);
       if (!task.isBelongEditor(initiator))
-        throw new TaskError(
-          "Если автора устанавливает редактор, то редактор должен быть ответственным за это задание"
-        );
+        throw new TaskError("Если автора устанавливает редактор, то редактор должен быть ответственным за это задание");
     }
 
     task.setAuthor(author);
     await this.taskRepository.save(task);
-    await this.historyRepository.create(
-      task.createHistory(initiator, "Автор был изменён")
-    );
+    await this.historyRepository.create(task.createHistory(initiator, "Автор был изменён"));
     return task;
   }
 
-  async setArticle(id: number, initiator: number, article?: number) {
+  canSetArticle(id: number, initiator: number, article?: number) {
     this.roleChecker.checkUserWithThrow(initiator, AccessItem.CAN_SEE_TASKS);
+    const task = this.taskRepository.getOne(id);
+    if (task.getArticle() === article) {
+      throw new TaskError("Статья уже закреплена");
+    }
+  }
+  getReleasedArticle(task: number) {
+    const taskRef = this.taskRepository.getOne(task);
+    return taskRef ? taskRef.getArticle() : undefined;
+  }
+  async setArticle(id: number, initiator: number, article?: number) {
     const task = this.taskRepository.getOne(id);
 
     if (task.getArticle() === article) {
@@ -82,16 +88,19 @@ export class TaskService {
     this.checkCanPinArticle(task, initiator);
     task.setArticle(article);
     await this.taskRepository.save(task);
-    await this.historyRepository.create(
-      task.createHistory(initiator, "Была закреплена статья")
-    );
+    await this.historyRepository.create(task.createHistory(initiator, "Была закреплена статья"));
     return task;
+  }
+  async removeArticle(id: number, initiator: number) {
+    const task = this.taskRepository.getOne(id);
+    task.setArticle(undefined);
+    await this.taskRepository.save(task);
+    await this.historyRepository.create(task.createHistory(initiator, "Была откреплена статья"));
   }
 
   async changeEditor(id: number, initiator: number, editor?: number) {
     const task = this.taskRepository.getOne(id);
-    if (task.getEditor() === editor)
-      throw new TaskError("Редактор уже установлен");
+    if (task.getEditor() === editor) throw new TaskError("Редактор уже установлен");
     let comment = "";
     if (task.getEditor() === initiator && !editor) {
       comment = await this.removeSelfEditor(task);
@@ -181,7 +190,7 @@ export class TaskService {
 
   /** Статья прикреплённая к заданию была опубликовано, задание считается выполненным */
   async end(id: number, editor: number) {
-    //// происходит после поубликации 
+    //// происходит после поубликации
     const task = this.taskRepository.getOne(id);
     const history = task.end(editor);
     await this.taskRepository.save(task);
@@ -191,7 +200,7 @@ export class TaskService {
 
   async endByArticleID(articleId: number, editor: number) {
     const task = this.taskRepository.getByArticle(articleId);
-    if(!task) return false;
+    if (!task) return false;
     await this.end(task.getId()!, editor);
     await this.feeService.pushFeeForTask(task, "");
     return true;
@@ -209,7 +218,7 @@ export class TaskService {
   /** Редактор отправляет задание в архив */
   async archive(id: number, editor: number) {
     const task = this.taskRepository.getOne(id);
-   const history = task.archive(editor);
+    const history = task.archive(editor);
     await this.taskRepository.save(task);
     await this.historyRepository.create(history);
     return task;
@@ -227,18 +236,12 @@ export class TaskService {
     return "Ответственный редактор был удалён администрацией";
   }
 
-  private async replaceEditor(
-    task: AuthorTask,
-    initiator: number,
-    editor: number
-  ) {
+  private async replaceEditor(task: AuthorTask, initiator: number, editor: number) {
     if (task.getEditor()) this.checkCanUserPutEditorInTask(initiator);
     this.checkCanUserBeEditorInTask(editor);
     task.setEditor(editor);
     return "Задание было переданно другому редактору";
   }
-
-  
 
   /**
    * Проверяем, можно ли пользователю иметь статьи
@@ -253,10 +256,7 @@ export class TaskService {
    * @param editor - Редактор, который будет исполнять задание
    */
   private checkCanUserPutAuthorInTask(editor: number) {
-    this.roleChecker.checkUserWithThrow(
-      editor,
-      AccessItem.CAN_PUT_AUTHOR_IN_TASK
-    );
+    this.roleChecker.checkUserWithThrow(editor, AccessItem.CAN_PUT_AUTHOR_IN_TASK);
   }
 
   /**
@@ -264,20 +264,14 @@ export class TaskService {
    * @param editor - Редактор, который будет исполнять задание
    */
   private checkCanUserPutEditorInTask(editor: number) {
-    this.roleChecker.checkUserWithThrow(
-      editor,
-      AccessItem.CAN_PUT_EDITOR_IN_TASK
-    );
+    this.roleChecker.checkUserWithThrow(editor, AccessItem.CAN_PUT_EDITOR_IN_TASK);
   }
   /**
    * Проверяем, можно ли пользователю быть редактором
    * @param editor - Редактор, который будет исполнять задание
    */
   private checkCanUserBeEditorInTask(editor: number) {
-    this.roleChecker.checkUserWithThrow(
-      editor,
-      AccessItem.CAN_BE_EDITOR_IN_TASK
-    );
+    this.roleChecker.checkUserWithThrow(editor, AccessItem.CAN_BE_EDITOR_IN_TASK);
   }
 
   /**
@@ -289,9 +283,7 @@ export class TaskService {
    */
   private checkCanPinArticle(task: AuthorTask, initiator: number) {
     if (task.getAuthor() !== initiator && task.getEditor() !== initiator) {
-      throw new TaskError(
-        "Не позволено, закреплять статью может только автор или ответственный редактор"
-      );
+      throw new TaskError("Не позволено, закреплять статью может только автор или ответственный редактор");
     }
   }
 }

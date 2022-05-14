@@ -79,15 +79,16 @@ export class UserModule {
       this.repository,
       this.contactsRepository
     );
+    const presenter = new UserPresenter(this.repository, this.roleComponent.getService())
 
     this.facade = new FakeMMUserFacade(
       this.userAuthorizationService,
       this.notificationService,
       this.roleComponent.getService(),
-      this.repository
+      this.repository,
+      presenter
     );
-
-    const presenter = new UserPresenter(this.facade)
+ 
     this.userController = new UserRestController(
       server,
       this.repository,
@@ -98,6 +99,7 @@ export class UserModule {
       presenter
     );
  
+    
 
     dataAccessService.setFactory("Contacts", contactFactory);
     dataAccessService.setFactory("VerifyRecord", UserVerifyRecordFactory);

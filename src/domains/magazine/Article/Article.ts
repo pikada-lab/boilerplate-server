@@ -223,8 +223,8 @@ export class BaseArticle {
     return {
       id: this.id,
       title: this.title,
-      image: this.horizontalSmallImage ?? null,
-      imageSq: this.squareImage ?? null,
+      verticalSmallImage: this.horizontalSmallImage ?? null,
+      squareImage: this.squareImage ?? null,
       createdAt: this.createdAt ?? 0,
       status: this.status
     };

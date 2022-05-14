@@ -1,13 +1,15 @@
-import { User, UserDTO } from "../../user";
-import { UserFacade } from "../../user/UserFacade";
+import { UserPresenter } from "../../user/UserPresenter";
+import { ArticleRepository } from "../Article/ArticleRepository";
 import { TaskError } from "../error";
-import { HistoryRepository } from "./History/HistoryRepository";
-import { AuthorTask } from "./Task";
-
+import { AuthorTask } from "../Task/Task";
+import { TaskComponent } from "../Task/TaskComponent"; 
+import { HistoryPresenter } from "./HistoryPresenter";
 export class TaskPresenter {
   constructor(
-    private histories: HistoryRepository,
-    private userFacade: UserFacade
+    private taskComponent: TaskComponent,
+    private userPresenter: UserPresenter,
+    private articleRepository: ArticleRepository,
+    private historyPresenter: HistoryPresenter
   ) {}
 
   /** Декоратор для редактора */
@@ -25,14 +27,17 @@ export class TaskPresenter {
 
   private tapForEditor(task: AuthorTask) {
     const author = task.getAuthor();
-    const authorRef = author ? this.getUserTumbanian(author) : null;
+    const authorRef = author ? this.userPresenter.getUserTumbanian(author) : null;
     const editor = task.getEditor();
-    const editorRef = editor ? this.getUserTumbanian(editor) : null;
+    const editorRef = editor ? this.userPresenter.getUserTumbanian(editor) : null;
+    const article = task.getArticle();
+    const articleRef = article ? this.articleRepository?.getOne(article)?.tumbanian() : null;
     return {
       ...task.toJSON(),
       editorRef: editorRef,
       authorRef: authorRef,
-      history: this.histories.getByTask(task.getId()!),
+      articleRef: articleRef,
+      history: this.taskComponent.getHistory(task.getId()!).map((r) => this.historyPresenter.taskHistory(r.toJSON())),
     };
   }
 
@@ -51,41 +56,15 @@ export class TaskPresenter {
 
   private tapForAuthor(task: AuthorTask) {
     const author = task.getAuthor();
-    const authorRef = author ? this.getUserTumbanian(author) : null;
+    const authorRef = author ? this.userPresenter.getUserTumbanian(author) : null;
     const editor = task.getEditor();
-    const editorRef = editor ? this.getUserTumbanian(editor) : null;
-    
+    const editorRef = editor ? this.userPresenter.getUserTumbanian(editor) : null;
+
     return {
       ...task.toJSON(),
       editorRef: editorRef,
       authorRef: authorRef,
-      history: this.histories.getByTask(task.getId()!),
+      history: this.taskComponent.getHistory(task.getId()!).map((r) => this.historyPresenter.taskHistory(r.toJSON())),
     };
-  }
-
-  private getUserTumbanian(u: number) {
-    const user = this.userFacade.getUserByID(u);
-    const role = this.userFacade.getRoleByID(user.getRole());
-    return new ClientUserTumbanian().restore(user.toJSON(), role.name);
-  }
-}
-
-
-
-export class ClientUserTumbanian {
-  id!: number;
-  firstName!: string;
-  lastName!: string;
-  roleName!: string;
-
-  getFullName() {
-    return `${this.firstName} ${this.lastName}`;
-  }
-  restore(user: UserDTO, roleName: string) {
-    this.id = user.id;
-    this.firstName = user.firstName;
-    this.lastName = user.lastName;
-    this.roleName = roleName;
-    return this;
   }
 }

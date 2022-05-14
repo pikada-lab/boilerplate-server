@@ -3,6 +3,7 @@ import { NotificationService } from "./NotificationService";
 import { AccessItem, Role } from "./Role/Role";
 import { RoleService } from "./Role/RoleService";
 import { UserAuthorizationService } from "./services";
+import { UserPresenter } from "./UserPresenter";
 
 export interface UserFacade {
   send(userId: number, subject: string, text: string): Promise<boolean>;
@@ -10,7 +11,8 @@ export interface UserFacade {
   checkUserWithThrow(userId: number, access: AccessItem): void;
   getUserByID(userId: number): User;
   getRoleByID(roleId: number): Role;
-  getAllRole(): Role[];
+  getAllRole(): Role[]; 
+  getUserPresenter(): UserPresenter;
 }
 
 export class FakeMMUserFacade implements UserFacade {
@@ -19,6 +21,7 @@ export class FakeMMUserFacade implements UserFacade {
     private notify: NotificationService,
     private roleService: RoleService,
     private userRepository: UserRepository,
+    private userPresenter: UserPresenter,
   ) {}
   async send(userId: number, subject: string, text: string): Promise<boolean> {
     return await this.notify.send(userId, subject, text);
@@ -41,5 +44,9 @@ export class FakeMMUserFacade implements UserFacade {
   
   getUserByID(userId: number): User {
     return this.userRepository.getOne(userId);
+  }
+
+  getUserPresenter(): UserPresenter {
+    return this.userPresenter;
   }
 }

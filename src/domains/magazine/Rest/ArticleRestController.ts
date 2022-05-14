@@ -1,19 +1,25 @@
 import { RoleChecker } from "..";
 import { onInit } from "../../../utilites";
-import { RestAuthorizationRequest, RestFileRequest, RestRequest, ServerController } from "../../../utilites/ServerController";
+import {
+  RestAuthorizationRequest,
+  RestFileRequest,
+  RestRequest,
+  ServerController,
+} from "../../../utilites/ServerController";
 import { AccessItem } from "../../user/Role/Role";
-import { ArticlePublishService } from "./ArticlePublishService";
-import { ArticleRepository } from "./ArticleRepository";
-import { ArticleService } from "./ArticleService";
- 
+import { ArticleRepository } from "../Article/ArticleRepository";
+import { ArticleService } from "../Article/ArticleService";
+import { ArticlePresenter } from "../Presenter/ArticlePresenter";
+import { ArticlePublishService } from "../Publish/ArticlePublishService";
 
 export class ArticleRestController implements onInit {
   constructor(
     private server: ServerController,
     private roleChecker: RoleChecker,
+    private articlePresenter: ArticlePresenter,
     private articleRepository: ArticleRepository,
     private articleService: ArticleService,
-    private articlePublishService: ArticlePublishService,
+    private articlePublishService: ArticlePublishService
   ) {}
 
   async init() {
@@ -83,52 +89,54 @@ export class ArticleRestController implements onInit {
 
   //#region Commands controls
 
-  private setCommandController() { 
+  private setCommandController() {
     this.server.postAuth("/v1/articles/", async (req) => this.createArticle(req));
     this.server.patchAuth("/v1/articles/:id", async (req) => this.saveArticle(req));
     this.server.patchAuth("/v1/articles/:id/category", async (req) => this.setCategory(req));
+    this.server.patchAuth("/v1/articles/:id/editor", async (req) => this.setEditor(req));
+    this.server.patchAuth("/v1/articles/:id/author", async (req) => this.setAuthor(req));
     this.server.patchAuth("/v1/articles/:id/publish", async (req) => this.publishArticle(req));
     this.server.patchAuth("/v1/articles/:id/unpublish", async (req) => this.unpublishArticle(req));
     this.server.patchAuth("/v1/articles/:id/archive", async (req) => this.archiveArticle(req));
-    this.server.patchAuth("/v1/articles/:id/restore", async (req) => this.restoreArticle(req)); 
+    this.server.patchAuth("/v1/articles/:id/restore", async (req) => this.restoreArticle(req));
     this.server.patchAuth("/v1/articles/:id/task", async (req) => this.setTaskInArticle(req));
     this.server.deleteAuth("/v1/articles/:id/task", async (req) => this.removeTaskInArticle(req));
     this.server.uploadAuth("/v1/articles/:id/image", async (req) => this.uploadImage(req));
     this.server.uploadAuth("/v1/articles/:id/cover", async (req) => this.uploadCoverImage(req));
     this.server.deleteAuth("/v1/articles/:id/cover", async (req) => this.removeCoverImage(req));
   }
- 
+
   async createArticle(req: RestRequest & RestAuthorizationRequest) {
-    const initiator = req.payload.id; 
+    const initiator = req.payload.id;
     this.checkNumber(initiator);
     this.roleChecker.checkUserWithThrow(initiator, AccessItem.CAN_CREATE_ARTICLE);
-    return await this.articleService.create(req.body as any, initiator );
+    return await this.articleService.create(req.body as any, initiator);
   }
   async publishArticle(req: RestRequest & RestAuthorizationRequest) {
     const id = +req.params["id"];
     this.checkNumber(id);
-    const initiator = req.payload.id; 
+    const initiator = req.payload.id;
     this.checkNumber(initiator);
     return await this.articlePublishService.publish(id, initiator);
   }
   async unpublishArticle(req: RestRequest & RestAuthorizationRequest) {
     const id = +req.params["id"];
     this.checkNumber(id);
-    const initiator = req.payload.id; 
+    const initiator = req.payload.id;
     this.checkNumber(initiator);
     return await this.articleService.unpublish(id, initiator);
   }
   async archiveArticle(req: RestRequest & RestAuthorizationRequest) {
     const id = +req.params["id"];
     this.checkNumber(id);
-    const initiator = req.payload.id; 
+    const initiator = req.payload.id;
     this.checkNumber(initiator);
     return await this.articleService.archive(id, initiator);
   }
   async restoreArticle(req: RestRequest & RestAuthorizationRequest) {
     const id = +req.params["id"];
     this.checkNumber(id);
-    const initiator = req.payload.id; 
+    const initiator = req.payload.id;
     this.checkNumber(initiator);
     return await this.articleService.unarchive(id, initiator);
   }
@@ -143,40 +151,60 @@ export class ArticleRestController implements onInit {
     const taskId = +req.body["taskId"];
     this.checkNumber(id);
     this.checkNumber(taskId);
-    return await this.articleService.setTask(id, taskId);
+    await this.articlePublishService.setTaskInArticle(id, taskId, +req.payload.id); 
+    const article = this.articleRepository.getOne(id);
+    return this.articlePresenter.forEditor(article);
   }
   async removeTaskInArticle(req: RestRequest & RestAuthorizationRequest) {
     const id = +req.params["id"];
     this.checkNumber(id);
-    return await this.articleService.removeTask(id);
+    await this.articlePublishService.removeTaskInArticle(id, +req.payload.id);
+    const article = this.articleRepository.getOne(id);
+    return this.articlePresenter.forEditor(article);
   }
 
   async uploadImage(req: RestRequest & RestAuthorizationRequest & RestFileRequest) {
-    const id = +req.params['id'];
+    const id = +req.params["id"];
     this.checkNumber(id);
-    const files = (req.raw as any).files.image; 
+    const files = (req.raw as any).files.image;
     return await this.articleService.uploadPhotoImage(id, Buffer.from(files.data));
   }
 
   async uploadCoverImage(req: RestRequest & RestAuthorizationRequest & RestFileRequest) {
-    const id = +req.params['id'];
+    const id = +req.params["id"];
     this.checkNumber(id);
-    const files = (req.raw as any).files.image; 
+    const files = (req.raw as any).files.image;
     return await this.articleService.uploadExtraLargeImage(id, Buffer.from(files.data));
   }
 
-  async removeCoverImage(req: RestRequest & RestAuthorizationRequest) { 
-    const id = +req.params['id'];
+  async removeCoverImage(req: RestRequest & RestAuthorizationRequest) {
+    const id = +req.params["id"];
     this.checkNumber(id);
-    return await this.articleService.removeExtraLargeImage(id)
+    return await this.articleService.removeExtraLargeImage(id);
   }
 
   async setCategory(req: RestRequest & RestAuthorizationRequest) {
-    const id = +req.params['id'];
+    const id = +req.params["id"];
     this.checkNumber(id);
     const category = +req.body.category;
     this.checkNumber(category);
     return await this.articleService.changeCategory(id, category);
+  }
+
+  async setEditor(req: RestRequest & RestAuthorizationRequest) {
+    const id = +req.params["id"];
+    this.checkNumber(id);
+    const editor = +req.body.editor;
+    this.checkNumber(editor);
+    return await this.articleService.setEditor(id, editor);
+  }
+
+  async setAuthor(req: RestRequest & RestAuthorizationRequest) {
+    const id = +req.params["id"];
+    this.checkNumber(id);
+    const author = +req.body.author;
+    this.checkNumber(author);
+    return await this.articleService.setAuthor(id, author);
   }
   //#endregion
 }

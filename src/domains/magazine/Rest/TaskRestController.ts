@@ -1,21 +1,19 @@
 import { RoleChecker } from "..";
-import {
-  RestAuthorizationRequest,
-  RestRequest,
-  ServerController,
-} from "../../../utilites/ServerController";
-import { AccessItem } from "../../user/Role/Role"; 
-import { TaskPresenter } from "./TaskPresenter";
-import { TaskRepository } from "./TaskRepository";
-import { TaskService } from "./TaskService";
+import { RestAuthorizationRequest, RestRequest, ServerController } from "../../../utilites/ServerController";
+import { AccessItem } from "../../user/Role/Role";
+import { TaskPresenter } from "../Presenter/TaskPresenter";
+import { ArticlePublishService } from "../Publish/ArticlePublishService";
+import { TaskRepository } from "../Task/TaskRepository";
+import { TaskService } from "../Task/TaskService";
 
 export class TaskRestController {
   constructor(
     private server: ServerController,
     private roleChecker: RoleChecker,
-    private taskRepository: TaskRepository, 
+    private taskRepository: TaskRepository,
     private taskService: TaskService,
-    private taskPresenter: TaskPresenter
+    private taskPresenter: TaskPresenter,
+    private articlePublishService: ArticlePublishService
   ) {}
 
   async init() {
@@ -27,27 +25,16 @@ export class TaskRestController {
   private setRequestController() {
     this.server.getAuth("/v1/task/", async (req) => this.getAll(req));
     this.server.getAuth("/v1/task/:id", async (req) => this.getById(req));
-    this.server.getAuth("/v1/task/author/:id", async (req) =>
-      this.getByAuthorId(req)
-    );
-    this.server.getAuth("/v1/task/editor/:id", async (req) =>
-      this.getByEditorId(req)
-    );
-    this.server.getAuth("/v1/task/article/:id", async (req) =>
-      this.getByArticleId(req)
-    );
+    this.server.getAuth("/v1/task/author/:id", async (req) => this.getByAuthorId(req));
+    this.server.getAuth("/v1/task/editor/:id", async (req) => this.getByEditorId(req));
+    this.server.getAuth("/v1/task/article/:id", async (req) => this.getByArticleId(req));
   }
 
   async getAll(req: RestRequest & RestAuthorizationRequest) {
     /// req.query
-    this.roleChecker.checkUserWithThrow(
-      req.payload.id,
-      AccessItem.CAN_SEE_TASKS
-    );
+    this.roleChecker.checkUserWithThrow(req.payload.id, AccessItem.CAN_SEE_TASKS);
 
-    const tasks = this.taskRepository
-      .getAll()
-      .map((t) => this.taskPresenter.forEditor(t));
+    const tasks = this.taskRepository.getAll().map((t) => this.taskPresenter.forEditor(t));
 
     return tasks;
   }
@@ -55,10 +42,7 @@ export class TaskRestController {
   async getById(req: RestRequest & RestAuthorizationRequest) {
     const id = +req.params.id;
     this.checkNumber(id);
-    this.roleChecker.checkUserWithThrow(
-      req.payload.id,
-      AccessItem.CAN_SEE_TASKS
-    );
+    this.roleChecker.checkUserWithThrow(req.payload.id, AccessItem.CAN_SEE_TASKS);
     const task = this.taskRepository.getOne(id);
     return this.taskPresenter.forEditor(task);
   }
@@ -66,10 +50,7 @@ export class TaskRestController {
   async getByAuthorId(req: RestRequest & RestAuthorizationRequest) {
     const id = +req.params.id;
     this.checkNumber(id);
-    this.roleChecker.checkUserWithThrow(
-      req.payload.id,
-      AccessItem.CAN_SEE_TASKS
-    );
+    this.roleChecker.checkUserWithThrow(req.payload.id, AccessItem.CAN_SEE_TASKS);
     const tasks = this.taskRepository.getByAuthor(id);
     return this.taskPresenter.forAuthor(tasks);
   }
@@ -77,20 +58,14 @@ export class TaskRestController {
   async getByEditorId(req: RestRequest & RestAuthorizationRequest) {
     const id = +req.params.id;
     this.checkNumber(id);
-    this.roleChecker.checkUserWithThrow(
-      req.payload.id,
-      AccessItem.CAN_SEE_TASKS
-    );
+    this.roleChecker.checkUserWithThrow(req.payload.id, AccessItem.CAN_SEE_TASKS);
     const tasks = this.taskRepository.getByEditor(id);
     return this.taskPresenter.forEditor(tasks);
   }
   async getByArticleId(req: RestRequest & RestAuthorizationRequest) {
     const id = +req.params.id;
     this.checkNumber(id);
-    this.roleChecker.checkUserWithThrow(
-      req.payload.id,
-      AccessItem.CAN_SEE_TASKS
-    );
+    this.roleChecker.checkUserWithThrow(req.payload.id, AccessItem.CAN_SEE_TASKS);
     const task = this.taskRepository.getByArticle(id);
     return this.taskPresenter.forEditor(task);
   }
@@ -103,53 +78,25 @@ export class TaskRestController {
     this.server.postAuth("/v1/task/", async (req) => this.create(req));
     this.server.patchAuth("/v1/task/:id", async (req) => this.edit(req));
 
-    this.server.patchAuth("/v1/task/:id/publish", async (req) =>
-      this.publish(req)
-    );
-    this.server.patchAuth("/v1/task/:id/unpublish", async (req) =>
-      this.unpublish(req)
-    );
-    this.server.patchAuth("/v1/task/:id/distribute", async (req) =>
-      this.distribute(req)
-    );
-    this.server.patchAuth("/v1/task/:id/refuse", async (req) =>
-      this.refuse(req)
-    );
-    this.server.patchAuth("/v1/task/:id/sendToResolve", async (req) =>
-      this.sendToResolve(req)
-    );
-    this.server.patchAuth("/v1/task/:id/revision", async (req) =>
-      this.revision(req)
-    );
-    this.server.patchAuth("/v1/task/:id/reject", async (req) =>
-      this.reject(req)
-    );
-    this.server.patchAuth("/v1/task/:id/resolve", async (req) =>
-      this.resolve(req)
-    );
-    // !Первая публикация статьи 
-    this.server.patchAuth("/v1/task/:id/cancel", async (req) =>
-      this.cancel(req)
-    );
-    this.server.patchAuth("/v1/task/:id/archive", async (req) =>
-      this.archive(req)
-    );
+    this.server.patchAuth("/v1/task/:id/publish", async (req) => this.publish(req));
+    this.server.patchAuth("/v1/task/:id/unpublish", async (req) => this.unpublish(req));
+    this.server.patchAuth("/v1/task/:id/distribute", async (req) => this.distribute(req));
+    this.server.patchAuth("/v1/task/:id/refuse", async (req) => this.refuse(req));
+    this.server.patchAuth("/v1/task/:id/sendToResolve", async (req) => this.sendToResolve(req));
+    this.server.patchAuth("/v1/task/:id/revision", async (req) => this.revision(req));
+    this.server.patchAuth("/v1/task/:id/reject", async (req) => this.reject(req));
+    this.server.patchAuth("/v1/task/:id/resolve", async (req) => this.resolve(req));
+    this.server.patchAuth("/v1/task/:id/set/article", async (req) => this.setArticleInTask(req));
+    this.server.deleteAuth("/v1/task/:id/set/article", async (req) => this.removeArticleInTask(req));
+    // !Первая публикация статьи
+    this.server.patchAuth("/v1/task/:id/cancel", async (req) => this.cancel(req));
+    this.server.patchAuth("/v1/task/:id/archive", async (req) => this.archive(req));
 
-    this.server.patchAuth("/v1/task/:id/set/fee", async (req) =>
-      this.setFee(req)
-    );
-    this.server.patchAuth("/v1/task/:id/set/author", async (req) =>
-      this.setAuthor(req)
-    );
-    this.server.patchAuth("/v1/task/:id/set/editor", async (req) =>
-      this.setEditor(req)
-    );
-    this.server.patchAuth("/v1/task/:id/set/article", async (req) =>
-      this.setAticle(req)
-    );
-    this.server.patchAuth("/v1/task/:id/set/dateEnd", async (req) =>
-      this.setDateEnd(req)
-    );
+    this.server.patchAuth("/v1/task/:id/set/fee", async (req) => this.setFee(req));
+    this.server.patchAuth("/v1/task/:id/set/author", async (req) => this.setAuthor(req));
+    this.server.patchAuth("/v1/task/:id/set/editor", async (req) => this.setEditor(req));
+    // this.server.patchAuth("/v1/task/:id/set/article", async (req) => this.setAticle(req));
+    this.server.patchAuth("/v1/task/:id/set/dateEnd", async (req) => this.setDateEnd(req));
   }
 
   private async create(req: RestAuthorizationRequest & RestRequest) {
@@ -162,11 +109,7 @@ export class TaskRestController {
 
   private async edit(req: RestAuthorizationRequest & RestRequest) {
     const { initiator, taskId } = this.getInitiatorWithTaskID(req);
-    const task = await this.taskService.editDescription(
-      taskId,
-      initiator,
-      req.body
-    );
+    const task = await this.taskService.editDescription(taskId, initiator, req.body);
     return this.taskPresenter.forEditor(task);
   }
 
@@ -245,22 +188,32 @@ export class TaskRestController {
     const task = await this.taskService.changeEditor(taskId, initiator, editor);
     return this.taskPresenter.forEditor(task);
   }
-
-  private async setAticle(req: RestAuthorizationRequest & RestRequest) {
-    const { initiator, taskId } = this.getInitiatorWithTaskID(req);
-    const article = +req.body?.article || undefined;
-    const task = await this.taskService.setArticle(taskId, initiator, article);
+  async setArticleInTask(req: RestRequest & RestAuthorizationRequest) {
+    const taskId = +req.params["id"];
+    const article = +req.body["article"];
+    this.checkNumber(taskId);
+    this.checkNumber(article);
+    await this.articlePublishService.setArticleInTask(article, taskId, +req.payload.id);
+    const task = this.taskRepository.getOne(taskId);
     return this.taskPresenter.forEditor(task);
   }
+  async removeArticleInTask(req: RestRequest & RestAuthorizationRequest) {
+    const id = +req.params["id"];
+    this.checkNumber(id);
+    await this.articlePublishService.removeArticleInTask(id, +req.payload.id);
+    const task = this.taskRepository.getOne(id);
+    return this.taskPresenter.forEditor(task);
+    
+  }
+ 
   private async setDateEnd(req: RestAuthorizationRequest & RestRequest) {
     const { initiator, taskId } = this.getInitiatorWithTaskID(req);
     const date = req.body?.dateEnd;
-    if(!date) throw new Error("Нет даты");
+    if (!date) throw new Error("Нет даты");
     const task = await this.taskService.setDateEnd(taskId, initiator, date);
     return this.taskPresenter.forEditor(task);
   }
- 
- 
+
   private getInitiatorWithTaskID(req: RestAuthorizationRequest & RestRequest) {
     const initiator = +req.payload.id;
     this.checkNumber(initiator);

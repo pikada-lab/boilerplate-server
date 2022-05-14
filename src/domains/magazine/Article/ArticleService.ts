@@ -1,8 +1,9 @@
 import { Article } from "..";
 import { AccessItem } from "../../user/Role/Role";
 import { UserFacade } from "../../user/UserFacade";
-import { ArticleError } from "../error";
+import { ArticleError, TaskError } from "../error";
 import { ImageService } from "../ImageStore";
+import { TaskService } from "../Task/TaskService";
 import { ArticleRepository } from "./ArticleRepository";
 import { HistoryRepository } from "./History/HistoryRepository";
 
@@ -48,18 +49,13 @@ export class ArticleService {
   }
 
   async publish(articleId: number, initiator: number) {
-    this.userFacad.checkUserWithThrow(
-      initiator,
-      AccessItem.CAN_PUBLISH_ARTICLE
-    );
+    this.userFacad.checkUserWithThrow(initiator, AccessItem.CAN_PUBLISH_ARTICLE);
     const articleRef = this.articleRepository.getOne(articleId);
     const history = articleRef.publish(initiator);
     const res = await this.articleRepository.save(articleRef);
     await this.historyRepository.create(history);
     if (!res) throw new ArticleError("Не удалось сохранить");
-    const articles = this.articleRepository.getByAuthor(
-      articleRef.getAuthor()!
-    );
+    const articles = this.articleRepository.getByAuthor(articleRef.getAuthor()!);
     // TODO Вынести количество статей для повышения стажёров в настройки сайта
     // СТРАТЕГИЯ
     if (articles.length === 3) {
@@ -74,14 +70,8 @@ export class ArticleService {
   }
 
   async unpublish(articleId: number, initiator: number) {
-    this.userFacad.checkUserWithThrow(
-      initiator,
-      AccessItem.CAN_PUBLISH_ARTICLE
-    );
-    this.userFacad.checkUserWithThrow(
-      initiator,
-      AccessItem.CAN_PUBLISH_ARTICLE
-    );
+    this.userFacad.checkUserWithThrow(initiator, AccessItem.CAN_PUBLISH_ARTICLE);
+    this.userFacad.checkUserWithThrow(initiator, AccessItem.CAN_PUBLISH_ARTICLE);
     const articleRef = this.articleRepository.getOne(articleId);
     const history = articleRef.unpublish(initiator);
     const res = await this.articleRepository.save(articleRef);
@@ -113,14 +103,26 @@ export class ArticleService {
     return articleRef;
   }
 
-  async setTask(articleId: number, task: number) {
+  async canSetTask(articleId: number, task: number, initiator: number) {
     const articleRef = this.articleRepository.getOne(articleId);
+    if (articleRef.getAuthor() != initiator && articleRef.getEditor() != initiator && initiator != 1)
+      throw new ArticleError("Не позволено");
+    if (articleRef.getTask() === task) throw new TaskError("Статья уже закреплена за задачей");
+  } 
+  
+ async getReleasedTask(articleId: number) {
+  const articleRef = this.articleRepository.getOne(articleId);
+  return articleRef ? articleRef.getTask() : undefined
+ }
+  async setTask(articleId: number, task: number) {
+    const articleRef = this.articleRepository.getOne(articleId); 
     articleRef.setTask(task);
     return await this.articleRepository.save(articleRef);
   }
 
-  async removeTask(articleId: number) {
+  async removeTask(articleId: number, initiator: number) {
     const articleRef = this.articleRepository.getOne(articleId);
+    if(articleRef.getStatus() != "CREATED") throw new TaskError("Статья уже опубликована");
     articleRef.setTask(undefined);
     return await this.articleRepository.save(articleRef);
   }
@@ -128,6 +130,11 @@ export class ArticleService {
   async setAuthor(articleId: number, author: number) {
     const articleRef = this.articleRepository.getOne(articleId);
     articleRef.setAuthor(author);
+    return await this.articleRepository.save(articleRef);
+  }
+  async setEditor(articleId: number, editor: number) {
+    const articleRef = this.articleRepository.getOne(articleId);
+    articleRef.setEditor(editor);
     return await this.articleRepository.save(articleRef);
   }
 
@@ -145,8 +152,7 @@ export class ArticleService {
 
   async uploadPhotoImage(articleId: number, buf: Buffer) {
     const articleRef = this.articleRepository.getOne(articleId);
-    const { originalPath, sq, hl, hs, vl, vs } =
-      await this.imageService.saveNormal(articleId, buf);
+    const { originalPath, sq, hl, hs, vl, vs } = await this.imageService.saveNormal(articleId, buf);
     articleRef.setImages(sq, hl, hs, vl, vs);
     await this.articleRepository.save(articleRef);
     return { originalPath, sq, hl, hs, vl, vs };
@@ -154,10 +160,7 @@ export class ArticleService {
 
   async uploadExtraLargeImage(articleId: number, buf: Buffer) {
     const articleRef = this.articleRepository.getOne(articleId);
-    const { originalPath, el } = await this.imageService.saveCover(
-      articleId,
-      buf
-    );
+    const { originalPath, el } = await this.imageService.saveCover(articleId, buf);
     articleRef.setCover(el);
     await this.articleRepository.save(articleRef);
     return { el };
