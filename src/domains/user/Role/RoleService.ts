@@ -117,7 +117,8 @@ export class RoleService {
             AccessItem.CAN_HAVE_TASK,
             AccessItem.CAN_PUT_AUTHOR_IN_TASK,
             AccessItem.CAN_PUT_EDITOR_IN_TASK,
-            AccessItem.CAN_PAY_FEE
+            AccessItem.CAN_PAY_FEE,
+            AccessItem.CAN_EDIT_CATEGORY,
           ],
         },
       ] as RoleDAO[];

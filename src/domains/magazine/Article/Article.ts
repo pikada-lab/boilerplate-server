@@ -1,7 +1,8 @@
 import { Article, ArticleHistory, ArticleStatus } from "..";
 
-export class BaseArticle {
+export class BaseArticle { 
   private id?: number;
+  private sysname!: string;
   private title!: string;
   private description!: string;
   private text!: string;
@@ -14,8 +15,7 @@ export class BaseArticle {
   private extraLargeImage?: string | undefined;
   private category!: number;
   private author?: number;
-  private editor!: number;
-  private task?: number | undefined;
+  private editor!: number; 
   private source!: string;
   private nick!: string;
   private photographer!: string;
@@ -27,6 +27,7 @@ export class BaseArticle {
     const article = new BaseArticle();
     return article.restore({
       id: 0,
+      sysname: `art-${+new Date()}`,
       title: "Новая статья",
       description: "",
       text: "",
@@ -71,15 +72,7 @@ export class BaseArticle {
   getStatus() {
     return this.status;
   }
-
-  getTask() {
-    return this.task;
-  }
-  setTask(task?: number) {
-    if (task === this.task) return;
-    if (this.status != "CREATED") throw new Error("Не позволено");
-    this.task = task;
-  }
+ 
 
   setNick(nick: string) {
     if (this.nick === nick) return;
@@ -128,21 +121,27 @@ export class BaseArticle {
       comment: comment ?? "",
     };
   }
-  publish(editor: number) {
-    if (this.status === "PUBLISHED") throw new Error("Не позволено");
+
+
+  canPublish(initiator: number) {
+    if (this.status === "PUBLISHED") throw new Error("Не позволено, Статья уже опубликована");
     if (!this.author) throw new Error("Нельзя публиковать статью без автора");
+  }
+
+  publish(editor: number) {
+    this.canPublish(editor);
     this.status = "PUBLISHED";
     return this.createHistory(editor);
   }
 
   unpublish(editor: number) {
-    if (this.status === "CREATED") throw new Error("Не позволено");
+    if (this.status === "CREATED") throw new Error("Не позволеноб статья ещё не опубликована");
     this.status = "CREATED";
     return this.createHistory(editor);
   }
 
   archive(editor: number) {
-    if (this.status === "ARCHIVED") throw new Error("Не позволено");
+    if (this.status === "ARCHIVED") throw new Error("Не позволено, статья уже заархивирована");
     this.status = "ARCHIVED";
     return this.createHistory(editor);
   }
@@ -183,20 +182,21 @@ export class BaseArticle {
     this.extraLargeImage = obj.extraLargeImage;
     this.category = obj.category;
     this.author = obj.author;
-    this.editor = obj.editor;
-    this.task = obj.task;
+    this.editor = obj.editor; 
     this.source = obj.source;
     this.nick = obj.nick;
     this.photographer = obj.photographer;
     this.status = obj.status;
     this.createdAt = obj.createdAt;
     this.publishedAt = obj.publishedAt;
+    this.sysname = obj.sysname;
     return this;
   }
 
   toJSON(): Article {
     return {
       id: this.id!,
+      sysname: this.sysname,
       title: this.title,
       description: this.description,
       text: this.text,
@@ -209,8 +209,7 @@ export class BaseArticle {
       extraLargeImage: this.extraLargeImage,
       category: this.category,
       author: this.author!,
-      editor: this.editor,
-      task: this.task,
+      editor: this.editor, 
       source: this.source ?? "",
       nick: this.nick ?? "",
       photographer: this.photographer ?? "",
@@ -222,10 +221,12 @@ export class BaseArticle {
   tumbanian() {
     return {
       id: this.id,
+      sysname: this.sysname,
       title: this.title,
       verticalSmallImage: this.horizontalSmallImage ?? null,
       squareImage: this.squareImage ?? null,
       createdAt: this.createdAt ?? 0,
+      author: this.author ?? null,
       status: this.status
     };
   }

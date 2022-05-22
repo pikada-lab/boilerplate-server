@@ -1,4 +1,4 @@
-import { Fee } from "../..";
+import { Fee } from "..";
 import { TaskFee } from "./Fee";
 
 export const FeeFactory = (fee: Fee) => {

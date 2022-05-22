@@ -36,9 +36,9 @@ export class ArticlePresenter {
     const authorRef = author ? this.userPresenter.getUserTumbanian(author) : null;
     const editor = article.getEditor();
     const editorRef = editor ? this.userPresenter.getUserTumbanian(editor) : null;
-    const task = article.getTask();
+    const task = this.taskRepository.getByArticle(article.getId());
 
-    const taskOriginal = task ? this.taskRepository.getOne(task) : null;
+    const taskOriginal = task ? task : null;
     const taskRef = taskOriginal ? this.taskPresenter.forEditor(taskOriginal) : null;
     return {
       ...article.toJSON(),

@@ -1,6 +1,6 @@
-import { Fee, Task } from "../..";
-import { DataAccessService } from "../../../../utilites";
-import { AuthorTask } from "../Task";
+import { Fee, Task } from "..";
+import { DataAccessService } from "../../../utilites";
+import { AuthorTask } from "../Task/Task";
 import { TaskFee } from "./Fee";
 
 export class FeeRepository {

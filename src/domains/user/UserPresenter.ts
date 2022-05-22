@@ -19,6 +19,20 @@ export class UserPresenter {
     const role = this.userRole.getOne(user.getRole());
     return new ClientUserTumbanian().restore(user.toJSON(), role.name);
   }
+
+  mapForArticle(user: User[]) {
+    return user.map((r) => this.forArticle(r))
+  }
+
+  forArticle(u: User) {
+    const role = this.userRole.getOne(u.getRole());
+    return {
+      name: u.getName(),
+      id: u.getId(),
+      role: role.name,
+      roleId: role.getId()
+    }
+  }
 }
 
 export class ClientUserTumbanian {

@@ -13,6 +13,7 @@ export interface UserFacade {
   getRoleByID(roleId: number): Role;
   getAllRole(): Role[]; 
   getUserPresenter(): UserPresenter;
+  getAllUser(): User[];
 }
 
 export class FakeMMUserFacade implements UserFacade {
@@ -48,5 +49,9 @@ export class FakeMMUserFacade implements UserFacade {
 
   getUserPresenter(): UserPresenter {
     return this.userPresenter;
+  }
+
+  getAllUser() {
+    return this.userRepository.getAll();
   }
 }

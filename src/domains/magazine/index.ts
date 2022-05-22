@@ -33,6 +33,7 @@ export interface Task {
 export type ArticleStatus =  "CREATED" | "PUBLISHED" | "ARCHIVED";
 export interface Article {
   id: number;
+  sysname: string;
   
   title: string;
   description: string;
@@ -86,5 +87,6 @@ export interface Fee {
   task: number;
   comment: string;
   status: FeeStatus;
-  account?: number; 
+  account?: string; 
+  executeComment?: string;
 }

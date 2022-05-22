@@ -25,12 +25,11 @@ export class ArticleService {
     return ref;
   }
 
+  getOne(id: number) {
+    return this.articleRepository.getOne(id);
+  }
   getTumbanian() {
     return this.articleRepository.getAll().map((a) => a.tumbanian());
-  }
-
-  getOneByTaskId(id: number) {
-    return this.articleRepository.getByTask(id);
   }
 
   async save(article: Article) {
@@ -49,24 +48,30 @@ export class ArticleService {
   }
 
   async publish(articleId: number, initiator: number) {
-    this.userFacad.checkUserWithThrow(initiator, AccessItem.CAN_PUBLISH_ARTICLE);
     const articleRef = this.articleRepository.getOne(articleId);
     const history = articleRef.publish(initiator);
     const res = await this.articleRepository.save(articleRef);
     await this.historyRepository.create(history);
     if (!res) throw new ArticleError("Не удалось сохранить");
-    const articles = this.articleRepository.getByAuthor(articleRef.getAuthor()!);
-    // TODO Вынести количество статей для повышения стажёров в настройки сайта
-    // СТРАТЕГИЯ
-    if (articles.length === 3) {
-      await this.userFacad.upgradeTrainee(articleRef.getAuthor()!);
-    }
+
+    await this.upgradeTrainee(articleRef.getAuthor()!);
     await this.userFacad.send(
       articleRef.getAuthor()!,
-      "Ваша статья опубликована",
-      `<p>Привет #USER${articleRef.getAuthor()}</p><p>Ваша статья #ARTICLE${articleRef.getId()} опубликована.</p>`
+      `Ваша статья опубликована`,
+      `<p>Привет @user${articleRef.getAuthor()}</p><p>Ваша статья @article${articleRef.getId()} опубликована.</p>`
     );
-    return res;
+
+    return articleRef;
+  }
+
+  private async upgradeTrainee(authorId: number) {
+    const countArticles = this.countPublishArticleByAuthor(authorId);
+    if (countArticles === 3) {
+      await this.userFacad.upgradeTrainee(authorId);
+    }
+  }
+  private countPublishArticleByAuthor(authorId: number) {
+    return this.articleRepository.getByAuthor(authorId).length || 0;
   }
 
   async unpublish(articleId: number, initiator: number) {
@@ -80,7 +85,7 @@ export class ArticleService {
     await this.userFacad.send(
       articleRef.getAuthor()!,
       "Ваша статья снята с публикации",
-      `<p>Привет #USER${articleRef.getAuthor()}</p><p>Ваша статья #ARTICLE${articleRef.getId()} была снята с публикации.</p>`
+      `<p>Привет @user${articleRef.getAuthor()}</p><p>Ваша статья @article${articleRef.getId()} была снята с публикации.</p>`
     );
     return res;
   }
@@ -101,30 +106,6 @@ export class ArticleService {
     if (!res) throw new ArticleError("Не удалось сохранить");
     await this.historyRepository.create(history);
     return articleRef;
-  }
-
-  async canSetTask(articleId: number, task: number, initiator: number) {
-    const articleRef = this.articleRepository.getOne(articleId);
-    if (articleRef.getAuthor() != initiator && articleRef.getEditor() != initiator && initiator != 1)
-      throw new ArticleError("Не позволено");
-    if (articleRef.getTask() === task) throw new TaskError("Статья уже закреплена за задачей");
-  } 
-  
- async getReleasedTask(articleId: number) {
-  const articleRef = this.articleRepository.getOne(articleId);
-  return articleRef ? articleRef.getTask() : undefined
- }
-  async setTask(articleId: number, task: number) {
-    const articleRef = this.articleRepository.getOne(articleId); 
-    articleRef.setTask(task);
-    return await this.articleRepository.save(articleRef);
-  }
-
-  async removeTask(articleId: number, initiator: number) {
-    const articleRef = this.articleRepository.getOne(articleId);
-    if(articleRef.getStatus() != "CREATED") throw new TaskError("Статья уже опубликована");
-    articleRef.setTask(undefined);
-    return await this.articleRepository.save(articleRef);
   }
 
   async setAuthor(articleId: number, author: number) {

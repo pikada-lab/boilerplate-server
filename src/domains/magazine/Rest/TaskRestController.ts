@@ -74,6 +74,7 @@ export class TaskRestController {
     if (num <= 0) throw new Error("Связь меньше или равна нулю");
   }
 
+  //#endregion
   private setCommandController() {
     this.server.postAuth("/v1/task/", async (req) => this.create(req));
     this.server.patchAuth("/v1/task/:id", async (req) => this.edit(req));
@@ -89,13 +90,13 @@ export class TaskRestController {
     this.server.patchAuth("/v1/task/:id/set/article", async (req) => this.setArticleInTask(req));
     this.server.deleteAuth("/v1/task/:id/set/article", async (req) => this.removeArticleInTask(req));
     // !Первая публикация статьи
+    this.server.patchAuth("/v1/task/:id/end", async (req) => this.end(req));
     this.server.patchAuth("/v1/task/:id/cancel", async (req) => this.cancel(req));
     this.server.patchAuth("/v1/task/:id/archive", async (req) => this.archive(req));
 
     this.server.patchAuth("/v1/task/:id/set/fee", async (req) => this.setFee(req));
     this.server.patchAuth("/v1/task/:id/set/author", async (req) => this.setAuthor(req));
     this.server.patchAuth("/v1/task/:id/set/editor", async (req) => this.setEditor(req));
-    // this.server.patchAuth("/v1/task/:id/set/article", async (req) => this.setAticle(req));
     this.server.patchAuth("/v1/task/:id/set/dateEnd", async (req) => this.setDateEnd(req));
   }
 
@@ -160,6 +161,14 @@ export class TaskRestController {
     return this.taskPresenter.forEditor(task);
   }
 
+  private async end(req: RestAuthorizationRequest & RestRequest) {
+    const { initiator, taskId } = this.getInitiatorWithTaskID(req);
+    const task = this.taskRepository.getOne(taskId);
+    await this.articlePublishService.publish(task.getArticle()!, initiator);
+    // Презентер в виде обновлённого задания
+    return this.taskPresenter.forEditor(task);
+  }
+
   private async cancel(req: RestAuthorizationRequest & RestRequest) {
     const { initiator, taskId } = this.getInitiatorWithTaskID(req);
     const task = await this.taskService.cancel(taskId, initiator);
@@ -203,9 +212,8 @@ export class TaskRestController {
     await this.articlePublishService.removeArticleInTask(id, +req.payload.id);
     const task = this.taskRepository.getOne(id);
     return this.taskPresenter.forEditor(task);
-    
   }
- 
+
   private async setDateEnd(req: RestAuthorizationRequest & RestRequest) {
     const { initiator, taskId } = this.getInitiatorWithTaskID(req);
     const date = req.body?.dateEnd;

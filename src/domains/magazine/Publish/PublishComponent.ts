@@ -6,7 +6,7 @@ import { ArticlePublishService } from "./ArticlePublishService";
 export class PublishComponent {
   private articlePublishService: ArticlePublishService;
   constructor(article: ArticleComponent, task: TaskComponent, userFacade: UserFacade) {
-    this.articlePublishService = new ArticlePublishService(article.getArticleService(), task.getService(), userFacade);
+    this.articlePublishService = new ArticlePublishService(article.getArticleService(), task.getRepository(), task.getService(), userFacade);
   }
 
  async init() {

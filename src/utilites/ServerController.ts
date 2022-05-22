@@ -47,6 +47,7 @@ export class ServerController {
   }
 
   listen() {
+    const address = "0.0.0.0";
     this.http.listen({ port: (process.env.PORT as any) ?? 8080 }, (err, address) => {
       if (err) {
         console.error(err);

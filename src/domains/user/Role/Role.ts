@@ -18,7 +18,8 @@ export enum AccessItem {
   CAN_PUT_EDITOR_IN_TASK,
   CAN_PUBLISH_ARTICLE,
   CAN_CHANGE_ROLE,
-  CAN_PAY_FEE
+  CAN_PAY_FEE,
+  CAN_EDIT_CATEGORY,
 }
 
 export interface RoleDAO {

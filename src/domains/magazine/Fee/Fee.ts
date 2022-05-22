@@ -1,16 +1,22 @@
-import { Fee, FeeStatus, Task } from "../..";
-import { AuthorTask } from "../Task";
+import { Fee, FeeStatus } from "..";
+import { AuthorTask } from "../Task/Task";
+
+ 
 
 export class TaskFee {
   private id!: number;
-  private user!: number;
-  private dateCreated!: number;
-  private dateExecuted?: number;
+  private user!: number; 
   private value!: number;
   private task!: number;
+
   private comment!: string;
-  private status!: FeeStatus;
-  private account?: number;
+  private executeComment?: string;
+  private account?: string; 
+
+  private status!: FeeStatus; 
+
+  private dateCreated!: number;
+  private dateExecuted?: number;
 
   constructor() {}
   getId() {
@@ -24,6 +30,9 @@ export class TaskFee {
     if (this.status !== "CREATED") throw new Error("Уже закрыто");
     if (this.user === author) throw new Error("Уже определён");
     this.user = author;
+  }
+  setAccount(account: string) {
+    this.account = account;
   }
   static create(task: AuthorTask, comment: string) {
     const fee: Fee = Object({
@@ -43,13 +52,13 @@ export class TaskFee {
     if (!this.account) throw new Error("Не указан счёт");
     this.dateExecuted = +new Date();
     this.status = "PAID";
-    this.comment = comment;
+    this.executeComment = comment;
   }
 
   cancel(comment: string) {
     if (this.status != "CREATED") throw new Error("Уже завершено");
     this.status = "CANCELED";
-    this.comment = comment;
+    this.executeComment = comment;
   }
 
   restore(fee: Fee) {
@@ -62,6 +71,8 @@ export class TaskFee {
     this.comment = fee.comment;
     this.status = fee.status;
     this.account = fee.account;
+    this.executeComment = fee.executeComment;
+    return this;
   }
 
   toJSON(): Fee {
@@ -75,6 +86,7 @@ export class TaskFee {
       comment: this.comment,
       status: this.status,
       account: this.account,
+      executeComment: this.executeComment,
     };
   }
 }

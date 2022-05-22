@@ -67,7 +67,7 @@ export class TaskRepository {
     this.indexEditor.get(editor)?.delete(u.getId()!);
   }
   private removeIndexArticle(article?: number) {
-    if(article) this.indexEditor?.delete(article);
+    if(article) this.indexArticle?.delete(article);
   }
 
   async save(task: AuthorTask): Promise<boolean> { 
@@ -148,10 +148,13 @@ export class TaskRepository {
     return this.index.get(id)!;
   }
 
+  hasInArticle(id: number) {
+    return this.indexArticle.has(id);
+  }
 
-  getByArticle(id: number) {
+  getByArticle(id: number): AuthorTask {
     if (!this.indexArticle.has(id)) throw new MagazineError("Нет статьи");
-    return this.indexArticle.get(id);
+    return this.indexArticle.get(id) as AuthorTask;
   }
 
   getByEditor(id: number) {

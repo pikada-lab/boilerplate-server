@@ -7,6 +7,7 @@ import {
   ServerController,
 } from "../../../utilites/ServerController";
 import { AccessItem } from "../../user/Role/Role";
+import { UserFacade } from "../../user/UserFacade";
 import { ArticleRepository } from "../Article/ArticleRepository";
 import { ArticleService } from "../Article/ArticleService";
 import { ArticlePresenter } from "../Presenter/ArticlePresenter";
@@ -16,10 +17,11 @@ export class ArticleRestController implements onInit {
   constructor(
     private server: ServerController,
     private roleChecker: RoleChecker,
-    private articlePresenter: ArticlePresenter,
+    private articlePresenter: ArticlePresenter, 
     private articleRepository: ArticleRepository,
     private articleService: ArticleService,
-    private articlePublishService: ArticlePublishService
+    private articlePublishService: ArticlePublishService,
+    private userFacade: UserFacade
   ) {}
 
   async init() {
@@ -27,7 +29,7 @@ export class ArticleRestController implements onInit {
     this.setCommandController();
   }
 
-  ///#region  Request controls
+  //#region  Request controls
 
   private setRequestController() {
     this.server.getAuth("/v1/articles/:id", async (req) => this.getArticleById(req));
@@ -35,8 +37,9 @@ export class ArticleRestController implements onInit {
     this.server.getAuth("/v1/articles/", async (req) => this.getArticles(req));
     this.server.getAuth("/v1/articles/author/:id", async (req) => this.getAuthor(req));
     this.server.getAuth("/v1/articles/editor/:id", async (req) => this.getEditor(req));
-    this.server.getAuth("/v1/articles/category/:id", async (req) => this.getByCategory(req));
-    this.server.getAuth("/v1/articles/task/:id", async (req) => this.getByTaskID(req));
+    this.server.getAuth("/v1/articles/category/:id", async (req) => this.getByCategory(req)); 
+    this.server.getAuth("/v1/articles/:id/authors", async (req) => this.getAuthorsForAticle(req)); 
+    this.server.getAuth("/v1/articles/:id/editors", async (req) => this.getEditorsForArticle(req)); 
   }
 
   private async getTumbanian(req: RestRequest & RestAuthorizationRequest) {
@@ -73,18 +76,32 @@ export class ArticleRestController implements onInit {
     this.checkNumber(id);
     return this.articleRepository.getByCategory(id);
   }
-  private async getByTaskID(req: RestRequest & RestAuthorizationRequest) {
-    this.roleChecker.checkUserWithThrow(req.payload.id, AccessItem.CAN_SEE_ARTICLE);
-    const id = +req.params["id"];
-    this.checkNumber(id);
-    return this.articleRepository.getByTask(id);
-  }
-
+ 
   private checkNumber(num: number) {
     if (+num != num) throw new Error("Номер не число");
     if (num <= 0) throw new Error("Связь меньше или равна нулю");
   }
 
+  getAuthorsForAticle(req: RestRequest & RestAuthorizationRequest) {
+    this.roleChecker.checkUserWithThrow(req.payload.id, AccessItem.CAN_SEE_ARTICLE);
+    const id = +req.params["id"];
+    this.checkNumber(id);
+    const article = this.articleRepository.getOne(id);
+    if(!article) throw new Error("Статья не найдена");
+    const user = this.userFacade.getAllUser().filter(r => ![1].includes(r.getRole()))
+    return this.userFacade.getUserPresenter().mapForArticle(user);
+  }
+
+  getEditorsForArticle(req: RestRequest & RestAuthorizationRequest) {
+    this.roleChecker.checkUserWithThrow(req.payload.id, AccessItem.CAN_SEE_ARTICLE); 
+    const id = +req.params["id"];
+    this.checkNumber(id);
+    const article = this.articleRepository.getOne(id);
+    if(!article) throw new Error("Статья не найдена");
+    const user = this.userFacade.getAllUser().filter(r => [6,7].includes(r.getRole()))
+    return  this.userFacade.getUserPresenter().mapForArticle(user);
+  }
+ 
   //#endregion
 
   //#region Commands controls
@@ -98,9 +115,7 @@ export class ArticleRestController implements onInit {
     this.server.patchAuth("/v1/articles/:id/publish", async (req) => this.publishArticle(req));
     this.server.patchAuth("/v1/articles/:id/unpublish", async (req) => this.unpublishArticle(req));
     this.server.patchAuth("/v1/articles/:id/archive", async (req) => this.archiveArticle(req));
-    this.server.patchAuth("/v1/articles/:id/restore", async (req) => this.restoreArticle(req));
-    this.server.patchAuth("/v1/articles/:id/task", async (req) => this.setTaskInArticle(req));
-    this.server.deleteAuth("/v1/articles/:id/task", async (req) => this.removeTaskInArticle(req));
+    this.server.patchAuth("/v1/articles/:id/restore", async (req) => this.restoreArticle(req)); 
     this.server.uploadAuth("/v1/articles/:id/image", async (req) => this.uploadImage(req));
     this.server.uploadAuth("/v1/articles/:id/cover", async (req) => this.uploadCoverImage(req));
     this.server.deleteAuth("/v1/articles/:id/cover", async (req) => this.removeCoverImage(req));
@@ -145,23 +160,7 @@ export class ArticleRestController implements onInit {
     const id = +req.params["id"];
     this.checkNumber(id);
     return await this.articleService.save(req.body as any);
-  }
-  async setTaskInArticle(req: RestRequest & RestAuthorizationRequest) {
-    const id = +req.params["id"];
-    const taskId = +req.body["taskId"];
-    this.checkNumber(id);
-    this.checkNumber(taskId);
-    await this.articlePublishService.setTaskInArticle(id, taskId, +req.payload.id); 
-    const article = this.articleRepository.getOne(id);
-    return this.articlePresenter.forEditor(article);
-  }
-  async removeTaskInArticle(req: RestRequest & RestAuthorizationRequest) {
-    const id = +req.params["id"];
-    this.checkNumber(id);
-    await this.articlePublishService.removeTaskInArticle(id, +req.payload.id);
-    const article = this.articleRepository.getOne(id);
-    return this.articlePresenter.forEditor(article);
-  }
+  }  
 
   async uploadImage(req: RestRequest & RestAuthorizationRequest & RestFileRequest) {
     const id = +req.params["id"];

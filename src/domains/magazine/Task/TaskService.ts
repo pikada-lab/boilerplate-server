@@ -1,7 +1,7 @@
 import { RoleChecker } from "..";
 import { AccessItem } from "../../user/Role/Role";
 import { TaskError } from "../error";
-import { FeeService } from "./Fee/FeeService";
+import { FeeService } from "../Fee/FeeService";
 import { HistoryRepository } from "./History/HistoryRepository";
 import { AuthorTask } from "./Task";
 import { TaskRepository } from "./TaskRepository";
@@ -192,18 +192,17 @@ export class TaskService {
   async end(id: number, editor: number) {
     //// происходит после поубликации
     const task = this.taskRepository.getOne(id);
+    await this.addFee(task.getArticle()!, task); 
     const history = task.end(editor);
     await this.taskRepository.save(task);
     await this.historyRepository.create(history);
     return task;
   }
 
-  async endByArticleID(articleId: number, editor: number) {
-    const task = this.taskRepository.getByArticle(articleId);
-    if (!task) return false;
-    await this.end(task.getId()!, editor);
-    await this.feeService.pushFeeForTask(task, "");
-    return true;
+  private addFee(articleId: number, task: AuthorTask) {
+    const firstEnded = !this.feeOnceHappened(task!.getId()!);
+    if (!firstEnded) return;
+    this.feeService.pushFeeForTask(task, `Оплата за статью @article${articleId} по заданию @task${task.getId()}`);
   }
 
   /** Редактор отменил задание */
@@ -285,5 +284,10 @@ export class TaskService {
     if (task.getAuthor() !== initiator && task.getEditor() !== initiator) {
       throw new TaskError("Не позволено, закреплять статью может только автор или ответственный редактор");
     }
+  }
+
+  /** Определяет по истории, было ли задание когда либо завершено успешно */
+  public feeOnceHappened(taskId: number) {
+    return this.historyRepository.getByTask(taskId).find((h) => h.isEnd());
   }
 }

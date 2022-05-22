@@ -9,8 +9,7 @@ export class ArticleRepository {
   private index = new Map<articleId, BaseArticle>();
   private indexPrevState = new Map<articleId, Article>();
   private indexAuthor = new Map<number, Map<articleId, BaseArticle>>();
-  private indexEditor = new Map<number, Map<articleId, BaseArticle>>();
-  private indexTask = new Map<number, BaseArticle>();
+  private indexEditor = new Map<number, Map<articleId, BaseArticle>>(); 
   private indexStatus = new Map<ArticleStatus, Map<articleId, BaseArticle>>();
   private indexCategory = new Map<number, Map<articleId, BaseArticle>>();
 
@@ -31,8 +30,7 @@ export class ArticleRepository {
     if (u.getAuthor()) this.addIndexAuthor(u.getAuthor()!, u);
     this.addIndexEditor(u.getEditor(), u);
     this.addIndexCategory(u.getCategory(), u);
-    this.addIndexStatus(u.getStatus(), u);
-    this.addIndexTask(u.getTask(), u);
+    this.addIndexStatus(u.getStatus(), u); 
   }
 
   private addIndexAuthor(author: number, u: BaseArticle) {
@@ -60,19 +58,14 @@ export class ArticleRepository {
     }
     this.indexStatus.get(status)!.set(u.getId(), u);
   }
-
-  private addIndexTask(task: number | undefined, u: BaseArticle) {
-    if (!task) return;
-    this.indexTask.set(task, u);
-  }
-
+ 
   private removeIndex(u: BaseArticle) {
     this.index.delete(u.getId());
     if (u.getAuthor()) this.removeIndexAuthor(u.getAuthor()!, u);
     this.removeIndexEditor(u.getEditor(), u);
     this.removeIndexCategory(u.getCategory(), u);
-    this.removeIndexStatus(u.getStatus(), u);
-    this.removeIndexTask(u.getTask());
+    this.removeIndexStatus(u.getStatus(), u); 
+    this.removeItemOldState(u.getId());
   }
 
   private removeIndexAuthor(author: number, u: BaseArticle) {
@@ -89,14 +82,8 @@ export class ArticleRepository {
   private removeIndexStatus(status: ArticleStatus, u: BaseArticle) {
     this.indexStatus.get(status)?.delete(u.getId());
   }
-
-  private removeIndexTask(task?: number) {
-    if (!task) return;
-    this.indexTask.delete(task);
-  }
-
-  async save(article: BaseArticle): Promise<boolean> {
-    this.taskChangeHandler(article);
+ 
+  async save(article: BaseArticle): Promise<boolean> { 
     this.authorChangeHandler(article);
     this.editorChangeHandler(article);
     this.categoryChangeHandler(article);
@@ -121,14 +108,7 @@ export class ArticleRepository {
   }
 
   //#region handers change detections
-
-  private taskChangeHandler(article: BaseArticle  ) {
-    const task = article.getTask();
-    const oldTask = this.getOldState(article)?.task;
-    if(task === oldTask) return;
-    if (oldTask) this.removeIndexTask(oldTask);
-    if (task) this.addIndexTask(task, article);
-  }
+ 
   private authorChangeHandler(article: BaseArticle  ) {
     const author = article.getAuthor();
     const oldAuthor = this.getOldState(article)?.author;
@@ -165,6 +145,9 @@ export class ArticleRepository {
   private updateOldState(article: BaseArticle) {
     this.indexPrevState.set(article.getId(), article.toJSON());
   }
+  private removeItemOldState(articleId: number) {
+    this.indexPrevState.delete(articleId);
+  }
 
   //#endregion
  
@@ -200,11 +183,7 @@ export class ArticleRepository {
     if (!this.indexAuthor.has(id)) throw new MagazineError("Нет статьи");
     return Array.from(this.indexAuthor.get(id)!.values());
   }
-
-  getByTask(id: number) {
-    if (!this.indexTask.has(id)) throw new MagazineError("Нет статьи");
-    return this.indexTask.get(id);
-  }
+ 
 
   getByStatus(status: ArticleStatus) {
     if (!this.indexStatus.has(status)) throw new MagazineError("Нет статьи");
