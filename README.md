@@ -43,3 +43,8 @@ API для пользователей представляет три вида �
 
 
 
+## Environment 
+
+YC_API_KEY - Yandex Cloud API_KEY (api-key.yml)
+YC_FOLDER_ID - Yandex Cloud folderId
+PORT - Server listener PORT (8020 for test)

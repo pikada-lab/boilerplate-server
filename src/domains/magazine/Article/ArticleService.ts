@@ -4,6 +4,7 @@ import { UserFacade } from "../../user/UserFacade";
 import { ArticleError, TaskError } from "../error";
 import { ImageService } from "../ImageStore";
 import { TaskService } from "../Task/TaskService";
+import { BaseArticle } from "./Article";
 import { ArticleRepository } from "./ArticleRepository";
 import { HistoryRepository } from "./History/HistoryRepository";
 
@@ -18,6 +19,9 @@ export class ArticleService {
   async init() {}
 
   async create(article: Article, initiator: number) {
+    article.author = initiator;
+    article.editor = 1;
+    article.category = 1;
     // TODO: Нужно добавить редактора на этапе создания, выбор редактора должен как то зависить от пользователя или нагрузки или задания
     const ref = await this.articleRepository.create(article);
     const history = ref.createHistory(initiator);
@@ -55,13 +59,21 @@ export class ArticleService {
     if (!res) throw new ArticleError("Не удалось сохранить");
 
     await this.upgradeTrainee(articleRef.getAuthor()!);
+    this.sendNotificationAfterPublish(articleRef)
+      .then()
+      .catch((ex) => {
+        // LOG
+        console.log("Article can not send to mail ", articleRef.getId(), ex);
+      });
+    return articleRef;
+  }
+
+  private async sendNotificationAfterPublish(articleRef: BaseArticle) {
     await this.userFacad.send(
       articleRef.getAuthor()!,
       `Ваша статья опубликована`,
       `<p>Привет @user${articleRef.getAuthor()}</p><p>Ваша статья @article${articleRef.getId()} опубликована.</p>`
     );
-
-    return articleRef;
   }
 
   private async upgradeTrainee(authorId: number) {

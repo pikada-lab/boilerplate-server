@@ -15,13 +15,13 @@ export class BaseArticle {
   private extraLargeImage?: string | undefined;
   private category!: number;
   private author?: number;
-  private editor!: number; 
+  private editor!: number;
   private source!: string;
   private nick!: string;
   private photographer!: string;
   private status: ArticleStatus = "CREATED";
-  private createdAt!: number; 
-  private publishedAt?: number; 
+  private createdAt!: number;
+  private publishedAt?: number;
 
   static create(author: number, editor: number, task?: number) {
     const article = new BaseArticle();
