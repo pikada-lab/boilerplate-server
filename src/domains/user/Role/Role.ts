@@ -20,6 +20,8 @@ export enum AccessItem {
   CAN_CHANGE_ROLE,
   CAN_PAY_FEE,
   CAN_EDIT_CATEGORY,
+  CAN_EDIT_PHOTO,
+  CAN_EDIT_ALBUM
 }
 
 export interface RoleDAO {

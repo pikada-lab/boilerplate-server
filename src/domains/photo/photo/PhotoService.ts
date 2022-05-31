@@ -1,3 +1,5 @@
+import { AccessItem } from "../../user/Role/Role";
+import { UserFacade } from "../../user/UserFacade";
 import { ImageService } from "./ImageService";
 import { MetaService } from "./MetaService";
 import { MetaDescriptionsPhoto, Photo } from "./Photo";
@@ -7,17 +9,26 @@ export class PhotoService {
   private immediateTags = false;
   private executeTagged = false;
   private moderate = false;
-  constructor(private photoRepository: PhotoReposiory, private meta: MetaService, private imageService: ImageService) {}
+  constructor(
+    private photoRepository: PhotoReposiory,
+    private meta: MetaService,
+    private imageService: ImageService,
+    private access: UserFacade
+  ) {}
 
   async init() {}
   async upload(buffer: Buffer, initiator: number, albumId?: number) {
+    this.access.checkUserWithThrow(initiator, AccessItem.CAN_EDIT_PHOTO);
     const smallBuffer = await this.imageService.getSmallBuffer(buffer);
     console.log("get small buffer", smallBuffer.length);
     if (this.moderate) await this.meta.moderate(smallBuffer);
     console.log("Premoderation executed");
     const photo = await this.add(initiator, albumId);
     console.log("photo aded", photo);
-    const { originalPath, sq, el } = await this.imageService.saveNormal(photo.getId(), buffer);
+    const { originalPath, sq, el } = await this.imageService.saveNormal(
+      photo.getId(),
+      buffer
+    );
     console.log("image saved", el);
     await this.photoRepository.save(photo.setURL(el));
     console.log("photo saved", el);
@@ -42,6 +53,7 @@ export class PhotoService {
   }
 
   async save(id: number, initiator: number, meta: MetaDescriptionsPhoto) {
+    this.access.checkUserWithThrow(initiator, AccessItem.CAN_EDIT_PHOTO);
     const photo = this.photoRepository.getOne(id);
     // if(photo.getUser() != initiator) throw new Error("You can't edit it");
     photo.setMetadata(meta);
@@ -58,7 +70,7 @@ export class PhotoService {
   }
 
   async add(initiator: number, albumId?: number) {
-    if (!initiator) throw new Error("User does not exist");
+    this.access.checkUserWithThrow(initiator, AccessItem.CAN_EDIT_PHOTO);
     const photo = await this.photoRepository.create({
       userId: initiator,
       albumId,
@@ -67,6 +79,7 @@ export class PhotoService {
   }
 
   async remove(id: number, initiator: number) {
+    this.access.checkUserWithThrow(initiator, AccessItem.CAN_EDIT_PHOTO);
     if (!id) throw new Error("Not found id");
     // посчитать сколько ссылок на эту статью в статьях. foto{{id}} и если их 0 то удалить;
     const photo = this.photoRepository.getOne(id);
@@ -76,6 +89,7 @@ export class PhotoService {
   }
 
   async ban(id: number, initiator: number) {
+    this.access.checkUserWithThrow(initiator, AccessItem.CAN_EDIT_PHOTO);
     const photo = this.photoRepository.getOne(id);
     if (!photo.canBan()) throw new Error("No");
     photo.ban();
@@ -83,21 +97,24 @@ export class PhotoService {
   }
 
   async unban(id: number, initiator: number) {
+    this.access.checkUserWithThrow(initiator, AccessItem.CAN_EDIT_PHOTO);
     const photo = this.photoRepository.getOne(id);
     if (!photo.canUnban()) throw new Error("No");
     photo.unban();
     return await this.photoRepository.save(photo);
   }
 
-  async setSort(id: number, index: number, albumId: number) {
+  async setSort(id: number, index: number, albumId: number, initiator: number) {
+    this.access.checkUserWithThrow(initiator, AccessItem.CAN_EDIT_PHOTO);
     const photo = this.photoRepository.getOne(id);
     if (!photo.isAlbum(albumId)) throw new Error("No");
     photo.setSort(index);
     return await this.photoRepository.save(photo);
   }
 
-  async putToAlbum(albumId: number, id: number, initiator: number) { 
-    const photo = this.photoRepository.getOne(id); 
+  async putToAlbum(albumId: number, id: number, initiator: number) {
+    this.access.checkUserWithThrow(initiator, AccessItem.CAN_EDIT_PHOTO);
+    const photo = this.photoRepository.getOne(id);
     photo.setAlbum(albumId);
     return await this.photoRepository.save(photo);
   }

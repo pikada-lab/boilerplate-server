@@ -26,7 +26,7 @@ export class API {
 
     const userModule = new UserModule(config, server, daService, mailPort);
     const magazineModule = new MagazineModule(daService, server, userModule.getFacade())
-    const photoModule = new PhotoModule(daService, server, yc);
+    const photoModule = new PhotoModule(daService, server, yc, userModule.getFacade());
     await userModule.init();
     await magazineModule.init(); 
     await photoModule.init();

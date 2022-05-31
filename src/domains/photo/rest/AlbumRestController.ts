@@ -5,13 +5,13 @@ import {
   ServerController,
 } from "../../../utilites/ServerController";
 import { AlbumComponent } from "../album/AlbumComponent";
+import { AlbumExportRepository } from "../album/AlbumRepository";
+import { AlbumService } from "../album/AlbumService";
 import { AlbumUploadService } from "../album/AlbumUploadService";
 import { PhotoComponent } from "../photo/PhotoComponent";
 import { PhotoReposioryExport } from "../photo/PhotoRepository";
 import { PhotoService } from "../photo/PhotoService";
-import { AlbumPresenter } from "../presenters/AlbumPresenter";
-import { AlbumExportRepository } from "/var/www/fake-mm/source2/server/src/domains/photo/album/AlbumRepository";
-import { AlbumService } from "/var/www/fake-mm/source2/server/src/domains/photo/album/AlbumService";
+import { AlbumPresenter } from "../presenters/AlbumPresenter"; 
 
 export class AlbumRestController {
   private albumService: AlbumService;

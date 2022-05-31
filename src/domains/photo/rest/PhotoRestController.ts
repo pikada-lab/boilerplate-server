@@ -6,7 +6,6 @@ import {
   ServerController,
 } from "../../../utilites/ServerController";
 import { YCService } from "../../../utilites/YCService";
-import { AccessItem } from "../../user/Role/Role";
 import { MetaDescriptionsPhoto } from "../photo/Photo";
 import { PhotoReposioryExport } from "../photo/PhotoRepository";
 import { PhotoService } from "../photo/PhotoService";
@@ -30,12 +29,18 @@ export class PhotoRestController {
   setRequestController() {
     this.server.getAuth("/v1/photo/", async (req) => this.getAll(req));
     this.server.getAuth("/v1/photo/:id", async (req) => this.getOne(req));
-    this.server.getAuth("/v1/photo/author/:id", async (req) => this.getByAuthor(req));
-    this.server.getAuth("/v1/photo/album/:id", async (req) => this.getByAlbum(req));
+    this.server.getAuth("/v1/photo/author/:id", async (req) =>
+      this.getByAuthor(req)
+    );
+    this.server.getAuth("/v1/photo/album/:id", async (req) =>
+      this.getByAlbum(req)
+    );
   }
 
   async getAll(req: RestAuthorizationRequest & RestRequest) {
-    return this.photoRepository.getAll().map((r) => this.photoPresenter.getPhoto(r));
+    return this.photoRepository
+      .getAll()
+      .map((r) => this.photoPresenter.getPhoto(r));
   }
   async getOne(req: RestAuthorizationRequest & RestRequest) {
     const id = +req.params.id;
@@ -63,11 +68,19 @@ export class PhotoRestController {
     this.server.patchAuth("/v1/photo/:id/ban", (req) => this.ban(req));
     this.server.patchAuth("/v1/photo/:id/unban", (req) => this.unban(req));
     this.server.deleteAuth("/v1/photo/:id", (req) => this.delete(req));
-    this.server.patchAuth("/v1/photo/:id/toalbum", (req) => this.putToAlbum(req));
+    this.server.patchAuth("/v1/photo/:id/toalbum", (req) =>
+      this.putToAlbum(req)
+    );
 
-    this.server.postAuth("/v1/photo/translate", async (req) => this.translate(req));
-    this.server.uploadAuth("/v1/photo/moderation", async (req) => this.checkImage(req));
-    this.server.uploadAuth("/v1/photo/classify", async (req) => this.classifyImage(req));
+    this.server.postAuth("/v1/photo/translate", async (req) =>
+      this.translate(req)
+    );
+    this.server.uploadAuth("/v1/photo/moderation", async (req) =>
+      this.checkImage(req)
+    );
+    this.server.uploadAuth("/v1/photo/classify", async (req) =>
+      this.classifyImage(req)
+    );
     this.server.postAuth("/v1/photo/:id/cdn", (req) => this.sendToCDN(req));
   }
 
@@ -78,15 +91,19 @@ export class PhotoRestController {
       `images/photo/normal/${photo.getId()}.el.png`
     );
   }
-  private async uploadImgae(req: RestAuthorizationRequest & RestRequest & RestFileRequest) {
+  private async uploadImgae(
+    req: RestAuthorizationRequest & RestRequest & RestFileRequest
+  ) {
     const file = (req.raw as any).files.image;
     const buff = Buffer.from(file.data);
-    const initiator = +req.payload.id; 
+    const initiator = +req.payload.id;
     const photo = await this.photoService.upload(buff, initiator);
     return this.photoPresenter.getPhoto(photo);
   }
 
-  private async classifyImage(req: RestAuthorizationRequest & RestRequest & RestFileRequest) {
+  private async classifyImage(
+    req: RestAuthorizationRequest & RestRequest & RestFileRequest
+  ) {
     const file = (req.raw as any).files.image;
     const buff = Buffer.from(file.data);
     const classes = await this.mobile.classify(buff);
@@ -99,7 +116,9 @@ export class PhotoRestController {
     return russianTags.translations[0].text;
   }
 
-  private async checkImage(req: RestAuthorizationRequest & RestRequest & RestFileRequest) {
+  private async checkImage(
+    req: RestAuthorizationRequest & RestRequest & RestFileRequest
+  ) {
     const files = (req.raw as any).files.image;
     const buff = Buffer.from(files.data);
     const moderation = await this.yc.moderationImage(buff);
@@ -116,7 +135,7 @@ export class PhotoRestController {
   }
 
   private async delete(req: RestAuthorizationRequest & RestRequest) {
-    throw new Error("DEPRECATED"); 
+    throw new Error("DEPRECATED");
   }
 
   private async save(req: RestAuthorizationRequest & RestRequest) {
@@ -138,7 +157,7 @@ export class PhotoRestController {
   private async putToAlbum(req: RestAuthorizationRequest & RestRequest) {
     const id = +req.params.id;
     const initiator = +req.payload.id;
-    const album  = +req.body.albumId; 
+    const album = +req.body.albumId;
     return await this.photoService.putToAlbum(album, id, initiator);
   }
 }
