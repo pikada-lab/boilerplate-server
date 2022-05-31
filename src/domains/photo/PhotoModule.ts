@@ -18,8 +18,8 @@ export class PhotoModule {
   constructor(das: DataAccessService, server: ServerController, yc: YCService, userFacade: UserFacade) {
     const mobilenet = new MobilenetService();
     this.imageService = new ImageService();
-    this.photoComponent = new PhotoComponent(das, this.imageService, yc, mobilenet);
-    this.albumComponent = new AlbumComponent(das, this.photoComponent);
+    this.photoComponent = new PhotoComponent(das, this.imageService, yc, mobilenet, userFacade);
+    this.albumComponent = new AlbumComponent(das, this.photoComponent, userFacade);
     this.presenter = new PresenterComponent(this.imageService, this.photoComponent.getRepository(), userFacade);
     this.rest = new RestComponent(server, this.photoComponent, this.albumComponent, this.presenter, yc, mobilenet);
   }

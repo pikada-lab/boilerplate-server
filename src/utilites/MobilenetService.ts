@@ -9,10 +9,9 @@ export interface Pair {
 }
 
 export class MobilenetService {
-  
 
   private getTFImage(imageBuffer: Buffer) {
-    return  node.decodeImage(imageBuffer);
+    return node.decodeImage(imageBuffer);
   }
 
   async classify(immageBuffer: Buffer): Promise<Pair[]> { 

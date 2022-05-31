@@ -43,7 +43,7 @@ export class FakeMMUserAuthenticationService
       .setIssuedAt()
       .setIssuer("fake-mm")
       .setAudience("reader")
-      .setExpirationTime("2h")
+      .setExpirationTime("15m")
       .sign(this.config.privateKey);
     // создаём рефреш токен
 

@@ -1,6 +1,7 @@
 import { DataAccessService } from "../../../utilites";
 import { MobilenetService } from "../../../utilites/MobilenetService";
 import { YCService } from "../../../utilites/YCService";
+import { UserFacade } from "../../user/UserFacade";
 import { ImageService } from "./ImageService";
 import { MetaService } from "./MetaService";
 import { PhotoFactory } from "./PhotoFactory";
@@ -11,10 +12,10 @@ export class PhotoComponent {
   private repository: PhotoReposiory;
   private meta: MetaService;
   private service: PhotoService;
-  constructor(das: DataAccessService, imageService: ImageService, yc: YCService, mobile: MobilenetService) {
+  constructor(das: DataAccessService, imageService: ImageService, yc: YCService, mobile: MobilenetService, userFacade: UserFacade) {
     this.repository = new PhotoReposiory(das);
     this.meta = new MetaService(yc, mobile);
-    this.service = new PhotoService(this.repository, this.meta, imageService);
+    this.service = new PhotoService(this.repository, this.meta, imageService, userFacade);
     
     das.setFactory("Photo", PhotoFactory);
   }

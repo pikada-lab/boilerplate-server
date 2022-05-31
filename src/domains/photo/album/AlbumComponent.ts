@@ -1,4 +1,5 @@
 import { DataAccessService } from "../../../utilites";
+import { UserFacade } from "../../user/UserFacade";
 import { PhotoComponent } from "../photo/PhotoComponent";
 import { AlbumFactory } from "./AlbumFactory";
 import { AlbumExportRepository, AlbumRepository } from "./AlbumRepository";
@@ -11,10 +12,10 @@ export class AlbumComponent {
   private uploadService: AlbumUploadService;
  
 
-  constructor(das: DataAccessService, photoComponent: PhotoComponent) {
+  constructor(das: DataAccessService, photoComponent: PhotoComponent, userFacade: UserFacade) {
     das.setFactory("Album", AlbumFactory);
     this.repository = new AlbumRepository(das);
-    this.service = new AlbumService(this.repository);
+    this.service = new AlbumService(this.repository, userFacade);
     this.uploadService = new AlbumUploadService(this.repository, photoComponent.getService(),  photoComponent.getRepository());
   }
 

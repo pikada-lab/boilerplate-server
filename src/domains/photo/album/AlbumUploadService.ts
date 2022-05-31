@@ -27,7 +27,7 @@ export class AlbumUploadService {
 
   async resort(albumId: number, photoIds: number[], initiator: number) {
     for (let [index, id] of Object.entries(photoIds)) {
-      await this.photoService.setSort(id, +index, albumId);
+      await this.photoService.setSort(id, +index, albumId, initiator);
     }
     return true;
   }
