@@ -57,10 +57,16 @@ export class TwoFactorSecrets {
     return true;
   }
   checkCode(userToken: string) {
+    console.log({
+      secret: this.secret,
+      encoding: "base32",
+      token: userToken,
+    });
     return speakeasy.totp.verify({
       secret: this.secret,
       encoding: "base32",
       token: userToken,
+      algorithm: "sha512",
     });
   }
   enable(testToken: string) {
@@ -89,6 +95,7 @@ export class TwoFactorSecrets {
     this.STATUS = dao.STATUS;
     this.staticCodes = dao.staticCodes;
     this.url = dao.url;
+    console.log(this);
     return this;
   }
 

@@ -110,7 +110,7 @@ export class FakeMMUserAuthenticationService
   async enable2FA(userId: number, token: string): Promise<void> {
     const record = this.twoFactorRepository.getRecordsByUserId(userId);
     if (!record) throw new UserError("Record doesn't find"); 
-    if (!record?.enable(token)) throw new UserError("Token is not matching");
+    if (!record.enable(token)) throw new UserError("Token is not matching");
     await this.twoFactorRepository.save(record!);
   }
 
